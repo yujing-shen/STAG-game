@@ -1,5 +1,12 @@
 package edu.uob;
 
+import com.alexmerz.graphviz.objects.Graph;
+import com.alexmerz.graphviz.Parser;
+import com.alexmerz.graphviz.objects.Node;
+import edu.uob.entities.Location;
+
+import java.io.FileReader;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -9,10 +16,14 @@ import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public final class GameServer {
 
     private static final char END_OF_TRANSMISSION = 4;
+    private HashMap<String, Location> gameMap;
+    private HashMap<String, Location> playerMap;
 
     public static void main(String[] args) throws IOException {
         File entitiesFile = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
@@ -30,6 +41,7 @@ public final class GameServer {
     */
     public GameServer(File entitiesFile, File actionsFile) {
         // TODO implement your server logic here
+
     }
 
     /**
@@ -57,6 +69,79 @@ public final class GameServer {
                 return "";
         }
         return "";
+    }
+
+    /**
+     * Parse the file to the graph
+     *
+     * @param entitiesFile The file to parse
+     */
+    private void loadEntitiesFile(File entitiesFile) {
+        try {
+            // 1. Create a new parser
+            Parser parser = new Parser();
+            // 2. FileReader
+            FileReader reader = new FileReader(entitiesFile);
+            // 3. Parse
+            parser.parse(reader);
+            // 4. Get the layout graph
+            Graph layoutGraph = parser.getGraphs().get(0);
+            // 5. Get the subgraph locations and paths
+            ArrayList<Graph> topSubgraphs = layoutGraph.getSubgraphs();
+            for (Graph subgraph : topSubgraphs) {
+                String graphId = subgraph.getId().getId();
+
+                if (graphId.equals("locations")) {
+                    parseLocations(subgraph);
+                } else if (graphId.equals("paths")) {
+                    parsePaths(subgraph);
+                }
+            }
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * Parse the locations
+     * @param locationsGraph The graph of locations
+     */
+    private void parseLocations(Graph locationsGraph) {
+        try {
+            ArrayList<Graph> locationsGraphSubgraphs = locationsGraph.getSubgraphs();
+            for (Graph cluster : locationsGraphSubgraphs) {
+                // Get all the nodes of the sub cluster
+                ArrayList<Node> nodes = cluster.getNodes(false);
+
+                for (Node node : nodes) {
+                    String locationName = node.getId().getId();
+                    String locationDescription = node.getAttribute("description");
+
+                    if (locationDescription != null) {
+                        Location location = new Location(locationName, locationDescription);
+                        // Add the location to the gameMap
+                        gameMap.put(locationName, location);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Parse the paths
+     * @param pathsGraph The graph of path
+     */
+    private void parsePaths(Graph pathsGraph) {
+        try {
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
