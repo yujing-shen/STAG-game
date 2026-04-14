@@ -3,6 +3,9 @@ package edu.uob;
 import com.alexmerz.graphviz.objects.Graph;
 import com.alexmerz.graphviz.Parser;
 import com.alexmerz.graphviz.objects.Node;
+import edu.uob.entities.Artefact;
+import edu.uob.entities.Character;
+import edu.uob.entities.Furniture;
 import edu.uob.entities.Location;
 
 import java.io.FileReader;
@@ -113,23 +116,58 @@ public final class GameServer {
         try {
             ArrayList<Graph> locationsGraphSubgraphs = locationsGraph.getSubgraphs();
             for (Graph cluster : locationsGraphSubgraphs) {
+                Location currentLocation = null;
                 // Get all the nodes of the sub cluster
+                // locations
                 ArrayList<Node> nodes = cluster.getNodes(false);
-
                 for (Node node : nodes) {
                     String locationName = node.getId().getId();
                     String locationDescription = node.getAttribute("description");
 
                     if (locationDescription != null) {
-                        Location location = new Location(locationName, locationDescription);
+                        currentLocation = new Location(locationName, locationDescription);
                         // Add the location to the gameMap
-                        gameMap.put(locationName, location);
+                        gameMap.put(locationName, currentLocation);
                     }
                 }
+
+                // Ensure the location is parsed successfully
+                if (currentLocation != null) parseLocationEntities(currentLocation,cluster);
+
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Parse the entities in the location
+     * @param location currentLocation
+     * @param clusterGraph
+     */
+    private void parseLocationEntities(Location location, Graph clusterGraph) {
+            // artefacts & furniture & character
+            for (Graph subgraph : clusterGraph.getSubgraphs()) {
+                String graphId = subgraph.getId().getId();
+                for (Node node : subgraph.getNodes(false)) {
+                    String name = node.getId().getId();
+                    String description = node.getAttribute("description");
+                    // Real node has the description
+                    if (description != null) {
+                        switch (graphId) {
+                            case "artefacts":
+                                location.addArtefact(new Artefact(name, description));
+                                break;
+                            case "furniture":
+                                location.addFurniture(new Furniture(name, description));
+                                break;
+                            case "characters":
+                                location.addCharacter(new Character(name, description));
+                                break;
+                        }
+                    }
+                }
+
     }
 
     /**
