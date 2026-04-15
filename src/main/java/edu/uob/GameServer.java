@@ -1,5 +1,6 @@
 package edu.uob;
 
+import com.alexmerz.graphviz.objects.Edge;
 import com.alexmerz.graphviz.objects.Graph;
 import com.alexmerz.graphviz.Parser;
 import com.alexmerz.graphviz.objects.Node;
@@ -146,28 +147,28 @@ public final class GameServer {
      * @param clusterGraph
      */
     private void parseLocationEntities(Location location, Graph clusterGraph) {
-            // artefacts & furniture & character
-            for (Graph subgraph : clusterGraph.getSubgraphs()) {
-                String graphId = subgraph.getId().getId();
-                for (Node node : subgraph.getNodes(false)) {
-                    String name = node.getId().getId();
-                    String description = node.getAttribute("description");
-                    // Real node has the description
-                    if (description != null) {
-                        switch (graphId) {
-                            case "artefacts":
-                                location.addArtefact(new Artefact(name, description));
-                                break;
-                            case "furniture":
-                                location.addFurniture(new Furniture(name, description));
-                                break;
-                            case "characters":
-                                location.addCharacter(new Character(name, description));
-                                break;
-                        }
+        // artefacts & furniture & character
+        for (Graph subgraph : clusterGraph.getSubgraphs()) {
+            String graphId = subgraph.getId().getId();
+            for (Node node : subgraph.getNodes(false)) {
+                String name = node.getId().getId();
+                String description = node.getAttribute("description");
+                // Real node has the description
+                if (description != null) {
+                    switch (graphId) {
+                        case "artefacts":
+                            location.addArtefact(new Artefact(name, description));
+                            break;
+                        case "furniture":
+                            location.addFurniture(new Furniture(name, description));
+                            break;
+                        case "characters":
+                            location.addCharacter(new Character(name, description));
+                            break;
                     }
                 }
-
+            }
+        }
     }
 
     /**
@@ -176,6 +177,23 @@ public final class GameServer {
      */
     private void parsePaths(Graph pathsGraph) {
         try {
+            ArrayList<Edge> edges = pathsGraph.getEdges();
+            for (Edge edge : edges) {
+                // Get the name of start
+                String fromName = edge.getSource().getNode().getId().getId();
+                // Get the name of destination
+                String toName = edge.getTarget().getNode().getId().getId();
+
+                // Get the start location and destination location
+                Location startLocation = gameMap.get(fromName);
+                Location endLocation = gameMap.get(toName);
+                if (startLocation != null && endLocation != null) {
+                    startLocation.addPath(endLocation);
+                } else {
+                    System.out.println("Warning: try to connect non-existent location: " + fromName + " -> " + toName);
+                }
+
+            }
 
         } catch (Exception e) {
             throw new RuntimeException(e);
