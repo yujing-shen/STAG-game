@@ -3,12 +3,9 @@ package edu.uob;
 import com.alexmerz.graphviz.objects.Edge;
 import com.alexmerz.graphviz.objects.Graph;
 import com.alexmerz.graphviz.Parser;
-import com.alexmerz.graphviz.objects.Id;
 
-import edu.uob.entities.Artefact;
+import edu.uob.entities.*;
 import edu.uob.entities.Character;
-import edu.uob.entities.Furniture;
-import edu.uob.entities.Location;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -37,8 +34,9 @@ public final class GameServer {
 
     private static final char END_OF_TRANSMISSION = 4;
     private HashMap<String, Location> gameMap;
-    private HashMap<String, Location> playerMap;
+    private HashMap<String, Player> players;
     private HashSet<GameAction> gameActions;
+    private Location startingLocation = null;
 
     public static void main(String[] args) throws IOException {
         File entitiesFile = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
@@ -67,24 +65,54 @@ public final class GameServer {
     */
     public String handleCommand(String command) {
         // TODO implement your server logic here
-        String firstToken = command.split(" ")[0];
-        switch (firstToken) {
-            case "inventory":
-            case "inv":
-                return handleInv(command);
-            case "get":
-                return handleGet(command);
-            case "drop":
-                return handleDrop(command);
-            case "goto":
-                return handleGoto(command);
-            case "look":
-                return handleLook(command);
-            default:
-                return "";
+        try {
+            // command cannot be null or empty
+            if (command == null || command.isEmpty()) {
+                return "Error: Invalid command";
+            }
+
+            String[] partsOfCommand = command.split(":",2);
+            if (partsOfCommand.length != 2) {
+                return "Error: Command must be in the format 'name:action";
+            }
+
+            // clean the parts of command
+            String playerName = partsOfCommand[0].trim().toLowerCase();
+            String actionCommand = partsOfCommand[1].trim().toLowerCase();
+
+            // check if the current player is already in the players
+            Player currentPlayer;
+            if (players.containsKey(playerName)) {
+                currentPlayer = players.get(playerName);
+            } else {
+                currentPlayer = new Player(playerName, "A player character");
+                // put the new player in the startingLocation
+                currentPlayer.setCurrentLocation(startingLocation);
+                players.put(playerName, currentPlayer);
+            }
+            String firstActionToken = actionCommand.split(" ")[0];
+            switch (firstActionToken) {
+                case "inventory":
+                case "inv":
+                    return handleInv(currentPlayer);
+                case "get":
+                    return handleGet(currentPlayer, actionCommand);
+                case "drop":
+                    return handleDrop(currentPlayer, actionCommand);
+                case "goto":
+                    return handleGoto(currentPlayer, actionCommand);
+                case "look":
+                    return handleLook(currentPlayer);
+                default:
+                    return handleCustomAction(currentPlayer, actionCommand);
+            }
+        } catch (Exception e) {
+            return "Error: Something went wrong executing your command: " + command;
         }
         return "";
     }
+
+
 
     /**
      * Parse the file to the graph
@@ -197,6 +225,11 @@ public final class GameServer {
                         currentLocation = new Location(locationName, locationDescription);
                         // Add the location to the gameMap
                         gameMap.put(locationName, currentLocation);
+
+                        // set the first location in .dot file startingLocation
+                        if (startingLocation == null) {
+                            startingLocation = currentLocation;
+                        }
                     }
                 }
 
@@ -274,10 +307,10 @@ public final class GameServer {
     /**
      * Lists all of the artefacts currently in the possession of the player
      *
-     * @param command The client's command
+     * @param
      * @return
      */
-    public String handleInv(String command) {
+    private String handleInv(Player player) {
 
     }
 
@@ -285,10 +318,10 @@ public final class GameServer {
      * Pickes up a specified artefact from current location
      * and adds it to the player's inventory
      *
-     * @param command
+     * @param
      * @return
      */
-    public String handleGet(String command) {
+    private String handleGet(Player player, String actionCommand) {
 
     }
 
@@ -296,10 +329,10 @@ public final class GameServer {
      * Moves the player to a new location
      * (only if there is a valid path to that location)
      *
-     * @param command
+     * @param
      * @return
      */
-    public String handleGoto(String command) {
+    private String handleGoto(Player player, String actionCommand) {
 
     }
 
@@ -307,10 +340,10 @@ public final class GameServer {
      * Puts down an artefact from player's inventory
      * and places it into the current location
      *
-     * @param command
+     * @param
      * @return
      */
-    public String handleDrop(String command) {
+    private String handleDrop(Player player, String actionCommand) {
 
     }
 
@@ -318,10 +351,14 @@ public final class GameServer {
      * Describes the current location,
      * including all entities in that location and paths to other locations
      *
-     * @param command
+     * @param
      * @return
      */
-    public String handleLook(String command) {
+    private String handleLook(Player player) {
+
+    }
+
+    private String handleCustomAction(Player currentPlayer, String actionCommand) {
 
     }
 
