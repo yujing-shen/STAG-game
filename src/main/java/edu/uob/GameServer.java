@@ -109,7 +109,7 @@ public final class GameServer {
         } catch (Exception e) {
             return "Error: Something went wrong executing your command: " + command;
         }
-        return "";
+        //return "";
     }
 
 
@@ -355,6 +355,45 @@ public final class GameServer {
      * @return
      */
     private String handleLook(Player player) {
+        // get the current room where current player is in
+        Location currentLocation = player.getCurrentLocation();
+
+        StringBuilder result = new StringBuilder();
+        // 1. basic description of the location
+        result.append("Now you are in ").append(currentLocation.getDescription()).append(".\n");
+        // 2. Artefacts
+        HashMap<String, Artefact> allArtefacts = currentLocation.getAllArtefacts();
+        if (!allArtefacts.isEmpty()) {
+            result.append("You can see the following artefacts: \n");
+            for (Artefact artefact : allArtefacts.values()) {
+                result.append(artefact.getName()).append(" - ").append(artefact.getDescription()).append("\n");
+            }
+        }
+        // 3. Furniture
+        HashMap<String, Furniture> allFurniture = currentLocation.getAllFurniture();
+        if (!allFurniture.isEmpty()) {
+            result.append("You can see the following furniture: \n");
+            for (Furniture furniture : allFurniture.values()) {
+                result.append(furniture.getName()).append(" - ").append(furniture.getDescription()).append("\n");
+            }
+        }
+        // 4. Characters
+        HashMap<String, Character> allCharacters = currentLocation.getAllCharacters();
+        if (!allCharacters.isEmpty()) {
+            result.append("You can see the following characters: \n");
+            for (Character character : allCharacters.values()) {
+                result.append(character.getName()).append(" - ").append(character.getDescription()).append("\n");
+            }
+        }
+        // 5. Paths
+        HashMap<String, Location> allPaths = currentLocation.getAllPaths();
+        if (!allPaths.isEmpty()) {
+            result.append("From here you can access : \n");
+            for (Location location : allPaths.values()) {
+                result.append(location.getName()).append("\n");
+            }
+        }
+        return result.toString();
 
     }
 

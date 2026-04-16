@@ -23,11 +23,11 @@ public class Location extends GameEntity {
     }
 
     // Path : get all the paths to locations
-    public HashMap<String, Location> getPaths() {
+    public HashMap<String, Location> getAllPaths() {
         return paths;
     }
     // Path : get the location by the specific location name
-    public Location getPath(String locationName) {
+    public Location getPathByName(String locationName) {
         return paths.get(locationName);
     }
     public void addPath(Location location) {
@@ -37,10 +37,11 @@ public class Location extends GameEntity {
        return paths.remove(locationName);
     }
 
-    public HashMap<String, Character> getCharacters() {
+    // Character
+    public HashMap<String, Character> getAllCharacters() {
         return characters;
     }
-    public Character getCharacter(String characterName) {
+    public Character getCharacterByName(String characterName) {
         return characters.get(characterName);
     }
     public void addCharacter(Character character) {
@@ -51,12 +52,12 @@ public class Location extends GameEntity {
     }
 
     // Look: To see all the artefacts
-    public HashMap<String, Artefact> getArtefacts() {
+    public HashMap<String, Artefact> getAllArtefacts() {
         return artefacts;
     }
 
     // Get the artefact by the name
-    public Artefact getArtefact(String name) {
+    public Artefact getArtefactByName(String name) {
         return artefacts.get(name);
     }
     public void addArtefact(Artefact artefact) {
@@ -67,10 +68,10 @@ public class Location extends GameEntity {
         return artefacts.remove(name);
     }
 
-    public HashMap<String, Furniture> getFurniture() {
+    public HashMap<String, Furniture> getAllFurniture() {
         return furniture;
     }
-    public Furniture getFurniture(String furnitureName) {
+    public Furniture getFurnitureByName(String furnitureName) {
         return furniture.get(furnitureName);
     }
     public void addFurniture(Furniture furniture) {
