@@ -3,12 +3,21 @@ package edu.uob;
 import com.alexmerz.graphviz.objects.Edge;
 import com.alexmerz.graphviz.objects.Graph;
 import com.alexmerz.graphviz.Parser;
-import com.alexmerz.graphviz.objects.Node;
+import com.alexmerz.graphviz.objects.Id;
+
 import edu.uob.entities.Artefact;
 import edu.uob.entities.Character;
 import edu.uob.entities.Furniture;
 import edu.uob.entities.Location;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.FileReader;
 
 import java.io.BufferedReader;
@@ -22,12 +31,14 @@ import java.net.Socket;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public final class GameServer {
 
     private static final char END_OF_TRANSMISSION = 4;
     private HashMap<String, Location> gameMap;
     private HashMap<String, Location> playerMap;
+    private HashSet<GameAction> gameActions;
 
     public static void main(String[] args) throws IOException {
         File entitiesFile = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
@@ -110,6 +121,63 @@ public final class GameServer {
     }
 
     /**
+     * Parse the actionFile
+     * @param actionsFile The file of actions to be parsed
+     */
+    private void loadActionsFile(File actionsFile) throws IOException, SAXException, ParserConfigurationException {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document document = builder.parse(actionsFile);
+        document.getDocumentElement().normalize();
+        // Get all the <action> nodes
+        NodeList nodeList = document.getElementsByTagName("action");
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            Node actioNode = nodeList.item(i);
+            if (actioNode.getNodeType() == Node.ELEMENT_NODE) {
+                Element actionElement = (Element) actioNode;
+
+                HashSet<String> triggersSet = extractEntities(actionElement,"triggers","keyphrase");
+                HashSet<String> subjectsSet = extractEntities(actionElement,"subjects","entity");
+                HashSet<String> consumedSet = extractEntities(actionElement,"consumed","entity");
+                HashSet<String> producedSet = extractEntities(actionElement,"produced","entity");
+                String narration = "";
+
+                NodeList narrationList = actionElement.getElementsByTagName("narration");
+                if (narrationList.getLength() > 0) {
+                    narration = narrationList.item(0).getTextContent();
+                }
+                GameAction currentAction = new GameAction(triggersSet, subjectsSet, consumedSet, producedSet, narration);
+                gameActions.add(currentAction);
+            }
+        }
+
+    }
+
+    /**
+     * extract the text from specified layer
+     * @param actionElement
+     * @param parentTag
+     * @param childTag
+     * @return
+     */
+    private HashSet<String> extractEntities(Element actionElement, String parentTag, String childTag) {
+        HashSet<String> resultSet = new HashSet<>();
+        // Find the parent
+        NodeList parentList = actionElement.getElementsByTagName(parentTag);
+        if  (parentList.getLength() > 0) {
+            Element parentElement = (Element) parentList.item(0);
+
+            // Find the inner child
+            NodeList childList = parentElement.getElementsByTagName(childTag);
+
+            for (int i = 0; i < childList.getLength(); i++) {
+                resultSet.add(childList.item(i).getTextContent());
+            }
+        }
+        return resultSet;
+    }
+
+    /**
      * Parse the locations
      * @param locationsGraph The graph of locations
      */
@@ -120,8 +188,8 @@ public final class GameServer {
                 Location currentLocation = null;
                 // Get all the nodes of the sub cluster
                 // locations
-                ArrayList<Node> nodes = cluster.getNodes(false);
-                for (Node node : nodes) {
+                ArrayList<com.alexmerz.graphviz.objects.Node> nodes = cluster.getNodes(false);
+                for (com.alexmerz.graphviz.objects.Node node : nodes) {
                     String locationName = node.getId().getId();
                     String locationDescription = node.getAttribute("description");
 
@@ -150,9 +218,11 @@ public final class GameServer {
         // artefacts & furniture & character
         for (Graph subgraph : clusterGraph.getSubgraphs()) {
             String graphId = subgraph.getId().getId();
-            for (Node node : subgraph.getNodes(false)) {
+            for (com.alexmerz.graphviz.objects.Node node : subgraph.getNodes(false)) {
+
                 String name = node.getId().getId();
                 String description = node.getAttribute("description");
+
                 // Real node has the description
                 if (description != null) {
                     switch (graphId) {
@@ -192,13 +262,14 @@ public final class GameServer {
                 } else {
                     System.out.println("Warning: try to connect non-existent location: " + fromName + " -> " + toName);
                 }
-
             }
 
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
+
 
     /**
      * Lists all of the artefacts currently in the possession of the player
