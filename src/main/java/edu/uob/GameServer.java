@@ -33,9 +33,9 @@ import java.util.HashSet;
 public final class GameServer {
 
     private static final char END_OF_TRANSMISSION = 4;
-    private HashMap<String, Location> gameMap;
-    private HashMap<String, Player> players;
-    private HashSet<GameAction> gameActions;
+    private HashMap<String, Location> gameMap = new HashMap<>();
+    private HashMap<String, Player> players = new HashMap<>();
+    private HashSet<GameAction> gameActions = new HashSet<>();
     private Location startingLocation = null;
 
     public static void main(String[] args) throws IOException {
@@ -54,6 +54,13 @@ public final class GameServer {
     */
     public GameServer(File entitiesFile, File actionsFile) {
         // TODO implement your server logic here
+        loadEntitiesFile(entitiesFile);
+        try {
+            loadActionsFile(actionsFile);
+        } catch (Exception e) {
+            System.err.println("Error loading actions file");
+            e.printStackTrace();
+        }
 
     }
 
@@ -87,7 +94,9 @@ public final class GameServer {
             } else {
                 currentPlayer = new Player(playerName, "A player character");
                 // put the new player in the startingLocation
-                currentPlayer.setCurrentLocation(startingLocation);
+                if (startingLocation != null) {
+                    currentPlayer.setCurrentLocation(startingLocation);
+                }
                 players.put(playerName, currentPlayer);
             }
             String firstActionToken = actionCommand.split(" ")[0];
@@ -107,6 +116,7 @@ public final class GameServer {
                     return handleCustomAction(currentPlayer, actionCommand);
             }
         } catch (Exception e) {
+            e.printStackTrace();
             return "Error: Something went wrong executing your command: " + command;
         }
         //return "";
@@ -213,29 +223,25 @@ public final class GameServer {
         try {
             ArrayList<Graph> locationsGraphSubgraphs = locationsGraph.getSubgraphs();
             for (Graph cluster : locationsGraphSubgraphs) {
-                Location currentLocation = null;
-                // Get all the nodes of the sub cluster
-                // locations
+                // get the nodes of this cluster
                 ArrayList<com.alexmerz.graphviz.objects.Node> nodes = cluster.getNodes(false);
-                for (com.alexmerz.graphviz.objects.Node node : nodes) {
-                    String locationName = node.getId().getId();
-                    String locationDescription = node.getAttribute("description");
+                if (nodes.size() > 0) {
+                    com.alexmerz.graphviz.objects.Node locNode = nodes.get(0);
+                    String locationName = locNode.getId().getId();
+                    String locationDescription = locNode.getAttribute("description");
 
                     if (locationDescription != null) {
-                        currentLocation = new Location(locationName, locationDescription);
-                        // Add the location to the gameMap
+                        Location currentLocation = new Location(locationName, locationDescription);
                         gameMap.put(locationName, currentLocation);
 
-                        // set the first location in .dot file startingLocation
                         if (startingLocation == null) {
                             startingLocation = currentLocation;
                         }
+
+                        // after the room is built, put all the entities in the room immediately
+                        parseLocationEntities(currentLocation, cluster);
                     }
                 }
-
-                // Ensure the location is parsed successfully
-                if (currentLocation != null) parseLocationEntities(currentLocation,cluster);
-
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -261,6 +267,7 @@ public final class GameServer {
                     switch (graphId) {
                         case "artefacts":
                             location.addArtefact(new Artefact(name, description));
+                            // System.out.println("Artefacts added." + name + " -> " + location.getName());
                             break;
                         case "furniture":
                             location.addFurniture(new Furniture(name, description));
@@ -311,7 +318,18 @@ public final class GameServer {
      * @return
      */
     private String handleInv(Player player) {
+        HashMap<String, Artefact> inventory = player.getInventory();
+        // check if the inventory is null
+        if (inventory == null) {
+            return "Your inventory is empty.";
+        }
+        StringBuilder result = new StringBuilder();
+        result.append("You are carrying:").append("\n");
+        for (Artefact artefact : inventory.values()) {
+            result.append(artefact.getName()).append("\n");
+        }
 
+        return result.toString();
     }
 
     /**
@@ -322,7 +340,7 @@ public final class GameServer {
      * @return
      */
     private String handleGet(Player player, String actionCommand) {
-
+        return "";
     }
 
     /**
@@ -333,7 +351,7 @@ public final class GameServer {
      * @return
      */
     private String handleGoto(Player player, String actionCommand) {
-
+        return "";
     }
 
     /**
@@ -344,7 +362,7 @@ public final class GameServer {
      * @return
      */
     private String handleDrop(Player player, String actionCommand) {
-
+        return "";
     }
 
     /**
@@ -393,12 +411,13 @@ public final class GameServer {
                 result.append(location.getName()).append("\n");
             }
         }
+        // System.out.println(result.toString());
         return result.toString();
 
     }
 
     private String handleCustomAction(Player currentPlayer, String actionCommand) {
-
+        return "";
     }
 
     /**
