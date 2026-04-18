@@ -340,25 +340,33 @@ public final class GameServer {
      * @return
      */
     private String handleGet(Player player, String actionCommand) {
-        String[] parts = actionCommand.split(" ");
-        if (parts.length < 2) {
-            return "Error: What do you want to get?";
-        }
-        // get the target
-        String targetItemName = parts[1];
-
-        // get the current location where the player is in
         Location currentLocation = player.getCurrentLocation();
-        // get all the artefacts in the room
-        HashMap<String, Artefact> allArtefacts = currentLocation.getAllArtefacts();
-        if (allArtefacts.containsKey(targetItemName)) {
-            Artefact artefactToPickUp = currentLocation.removeArtefact(targetItemName);
-            // add to the inventory
-            player.addArtefact(artefactToPickUp);
-            return "You picked up a " + targetItemName + ".";
-        } else {
-            return "There is no " + targetItemName + " here to pick up";
+        HashMap<String, Artefact> roomArtefacts = currentLocation.getAllArtefacts();
+        // multiple entities to get
+        // to check what is mentioned in the actionCommand from allArtefacts
+        ArrayList<Artefact> mentionedArtefacts = new ArrayList<>();
+        for (String artefactName : roomArtefacts.keySet()){
+            if (actionCommand.contains(artefactName)){
+                mentionedArtefacts.add(roomArtefacts.get(artefactName));
+            }
         }
+        // if nothing is mentioned
+        if (mentionedArtefacts.isEmpty()) {
+            return "There is nothing like that here to pick up.";
+        }
+
+        StringBuilder pickedUpItems = new StringBuilder();
+        for (Artefact artefact : mentionedArtefacts) {
+            String artefactName = artefact.getName();
+            currentLocation.removeArtefact(artefactName);
+            player.addArtefact(artefact);
+            pickedUpItems.append(artefactName).append(",");
+        }
+        // strip ',' in the end
+        String result = pickedUpItems.toString();
+        result = result.substring(0, result.length() - 1);
+
+        return "You picked up: " + result + ".";
 
     }
 
@@ -370,6 +378,7 @@ public final class GameServer {
      * @return
      */
     private String handleGoto(Player player, String actionCommand) {
+
         return "";
     }
 
@@ -381,7 +390,30 @@ public final class GameServer {
      * @return
      */
     private String handleDrop(Player player, String actionCommand) {
-        return "";
+        Location currentLocation = player.getCurrentLocation();
+        HashMap<String, Artefact> inventory = player.getInventory();
+        //
+        ArrayList<Artefact> mentionedArtefacts = new ArrayList<>();
+        for (String artefactName : inventory.keySet()) {
+            if  (actionCommand.contains(artefactName)) {
+                mentionedArtefacts.add(inventory.get(artefactName));
+            }
+        }
+        if (mentionedArtefacts.isEmpty()) {
+            return "There is nothing like that here to drop.";
+        }
+        StringBuilder droppedItems = new StringBuilder();
+        for (Artefact targetArtefact : mentionedArtefacts) {
+            String artefactName = targetArtefact.getName();
+            // player drop the item to the currentLocation
+            player.removeArtefact(artefactName);
+            currentLocation.addArtefact(targetArtefact);
+            droppedItems.append(artefactName).append(",");
+        }
+        String result = droppedItems.toString();
+        result = result.substring(0, result.length() - 1);
+        return "You dropped: " + result + ".";
+
     }
 
     /**

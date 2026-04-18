@@ -24,8 +24,8 @@ public class Player extends GameEntity {
     public void addArtefact(Artefact artefact) {
         inventory.put(artefact.getName(), artefact);
     }
-    public Artefact removeArtefact(Artefact artefact) {
-        return inventory.remove(artefact.getName());
+    public Artefact removeArtefact(String artefactName) {
+        return inventory.remove(artefactName);
     }
 
     // location

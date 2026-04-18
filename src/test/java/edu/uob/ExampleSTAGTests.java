@@ -65,5 +65,51 @@ class ExampleSTAGTests {
   }
 
   // Add more unit tests or integration tests here.
+    // Test that we can get and drop multiple artefacts at one time
+    @Test
+        void testGreedyGetAndDrop() {
+        // 1. Get the potion and the axe at the same time
+        sendCommandToServer("simon: get the potion and axe please");
+        String invResponse = sendCommandToServer("simon: inv").toLowerCase();
+        assertTrue(invResponse.contains("potion"), "Did not see the potion in the inventory");
+        assertTrue(invResponse.contains("axe"), "Did not see the axe in the inventory");
+        // 2. look if the location has nothing
+        String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertFalse(lookResponse.contains("potion"), "Potion should not be on the ground anymore");
+        assertFalse(lookResponse.contains("axe"), "Axe should not be on the ground anymore");
+        // 3. drop the portion and axe at the same time
+        sendCommandToServer("simon: quickly drop the axe and potion now");
+        invResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertFalse(invResponse.contains("potion"), "Potion should be removed from inventory");
+        assertFalse(invResponse.contains("axe"), "Axe should not be on the ground anymore");
+
+    }
+    @Test
+    void testPunctuationAndCaseInsensitivity() {
+        sendCommandToServer("owen: GET POTION!!! AND AXE???");
+
+        String invResponse = sendCommandToServer("owen: inv").toLowerCase();
+        assertTrue(invResponse.contains("potion"), "Failed to parse potion with punctuation");
+        assertTrue(invResponse.contains("axe"), "Failed to parse axe with punctuation");
+    }
+    @Test
+    void testInvalidGetAndDrop() {
+        // 1. try to get the FURNITURE
+        sendCommandToServer("simon: get trapdoor");
+        String invResponse = sendCommandToServer("simon: inv").toLowerCase();
+        assertFalse(invResponse.contains("trapdoor"), "Player should not be able to pick up furniture");
+
+        // 2. try to drop UNEXISTING artefact of the inv
+        String dropResponse = sendCommandToServer("simon: drop gold").toLowerCase();
+        String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertFalse(lookResponse.contains("gold"), "Dropping an item you do not have should not create it in the room.");
+    }
+    @Test
+    void testEmptyInventory() {
+      // the inv should be empty when opening the game
+      String invResponse = sendCommandToServer("simon: inv").toLowerCase();
+      assertFalse(invResponse.contains("potion"), "Inventory should be empty at the start");
+      assertFalse(invResponse.contains("axe"), "Inventory should be empty at the start");
+    }
 
 }
