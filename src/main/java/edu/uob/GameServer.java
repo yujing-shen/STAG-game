@@ -85,7 +85,7 @@ public final class GameServer {
 
             // clean the parts of command
             String playerName = partsOfCommand[0].trim().toLowerCase();
-            String actionCommand = partsOfCommand[1].trim().toLowerCase();
+            String actionCommand = cleanCommand(partsOfCommand[1]);
 
             // check if the current player is already in the players
             Player currentPlayer;
@@ -340,7 +340,26 @@ public final class GameServer {
      * @return
      */
     private String handleGet(Player player, String actionCommand) {
-        return "";
+        String[] parts = actionCommand.split(" ");
+        if (parts.length < 2) {
+            return "Error: What do you want to get?";
+        }
+        // get the target
+        String targetItemName = parts[1];
+
+        // get the current location where the player is in
+        Location currentLocation = player.getCurrentLocation();
+        // get all the artefacts in the room
+        HashMap<String, Artefact> allArtefacts = currentLocation.getAllArtefacts();
+        if (allArtefacts.containsKey(targetItemName)) {
+            Artefact artefactToPickUp = currentLocation.removeArtefact(targetItemName);
+            // add to the inventory
+            player.addArtefact(artefactToPickUp);
+            return "You picked up a " + targetItemName + ".";
+        } else {
+            return "There is no " + targetItemName + " here to pick up";
+        }
+
     }
 
     /**
@@ -414,6 +433,23 @@ public final class GameServer {
         // System.out.println(result.toString());
         return result.toString();
 
+    }
+
+    /**
+     * clean the command
+     * strip all the punctuations
+     * @param rawCommand
+     * @return
+     */
+    private String cleanCommand(String rawCommand) {
+        // 1. convert command to lower case
+        String cleanStr = rawCommand.toLowerCase();
+        // 2. strip all of punctuations
+        cleanStr = cleanStr.replace("\\p{Punct}", " ");
+        // 3. combine multiple and consecutive space to one space
+        cleanStr = cleanStr.replace("\\s+", "").trim();
+
+        return cleanStr;
     }
 
     private String handleCustomAction(Player currentPlayer, String actionCommand) {
