@@ -506,7 +506,69 @@ public final class GameServer {
     }
 
     private String handleCustomAction(Player currentPlayer, String actionCommand) {
-        return "";
+        Location currentLocation = currentPlayer.getCurrentLocation();
+        Location storeroom = gameMap.get("storeroom");
+
+        // 1. find the trigger identification
+        for (GameAction gameAction: gameActions) {
+            for (String trigger: gameAction.getTriggers()) {
+                if (actionCommand.contains(trigger)) {
+
+                    boolean verified = true;
+
+                    // 2. subject verification
+                    HashSet<String> subjects = gameAction.getSubjects();
+                    for (String subject : subjects) {
+                        boolean inInv = currentPlayer.getInventory().containsKey(subject);
+                        boolean inRoomArtefacts = currentLocation.getAllArtefacts().containsKey(subject);
+                        boolean inRoomFurniture = currentLocation.getAllFurniture().containsKey(subject);
+
+                        if (!inInv && !inRoomArtefacts && !inRoomFurniture) {
+                            verified = false;
+                            break;
+                        }
+                    }
+                    // 3. executing effects
+                    if (verified) {
+                        // consumed
+                        for (String entityName : gameAction.getConsumed()) {
+                            if (currentLocation.getAllArtefacts().containsKey(entityName)) {
+                                Artefact artefact = currentLocation.getAllArtefacts().get(entityName);
+                                currentLocation.removeArtefact(entityName);
+                                storeroom.addArtefact(artefact);
+                            }
+                            else if (currentPlayer.getInventory().containsKey(entityName)) {
+                                Artefact artefact = currentPlayer.getInventory().get(entityName);
+                                currentPlayer.removeArtefact(entityName);
+                                storeroom.addArtefact(artefact);
+                            }
+                            else if (currentLocation.getAllFurniture().containsKey(entityName)) {
+                                Furniture furniture = currentLocation.getAllFurniture().get(entityName);
+                                currentLocation.removeFurniture(entityName);
+                                storeroom.addFurniture(furniture);
+                            }
+                        }
+
+                        // produced
+                        for (String entityName : gameAction.getProduced()) {
+                            if (storeroom.getAllArtefacts().containsKey(entityName)) {
+                                Artefact artefact = storeroom.getAllArtefacts().get(entityName);
+                                storeroom.removeArtefact(entityName);
+                                currentLocation.addArtefact(artefact);
+                            }
+                            else if (storeroom.getAllFurniture().containsKey(entityName)) {
+                                Furniture furniture = currentLocation.getAllFurniture().get(entityName);
+                                storeroom.removeFurniture(entityName);
+                                currentLocation.addFurniture(furniture);
+                            }
+                        }
+
+                        return gameAction.getNarration();
+                    }
+                }
+            }
+        }
+        return "You cannot do that here, or you don't have the required items.";
     }
 
     /**
