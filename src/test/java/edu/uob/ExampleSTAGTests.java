@@ -92,6 +92,7 @@ class ExampleSTAGTests {
         assertTrue(invResponse.contains("potion"), "Failed to parse potion with punctuation");
         assertTrue(invResponse.contains("axe"), "Failed to parse axe with punctuation");
     }
+
     @Test
     void testInvalidGetAndDrop() {
         // 1. try to get the FURNITURE
@@ -104,12 +105,55 @@ class ExampleSTAGTests {
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
         assertFalse(lookResponse.contains("gold"), "Dropping an item you do not have should not create it in the room.");
     }
+
     @Test
     void testEmptyInventory() {
       // the inv should be empty when opening the game
       String invResponse = sendCommandToServer("simon: inv").toLowerCase();
       assertFalse(invResponse.contains("potion"), "Inventory should be empty at the start");
       assertFalse(invResponse.contains("axe"), "Inventory should be empty at the start");
+    }
+
+    @Test
+    void testValidGotoAndReturn() {
+        // 1. player goto forest from cabin
+        sendCommandToServer("simon: goto forest");
+        // make sure the key of forest can be seen
+        String response = sendCommandToServer("simon: look").toLowerCase();
+        assertTrue(response.contains("key"), "After goto forest, player should see the key on the ground.");
+        // make sure potion of cabin cannot been seen
+        assertFalse(response.contains("potion"), "After goto forest, potion of cabin should not be on the ground anymore");
+
+        // 2. player return cabin from forest
+        sendCommandToServer("simon: goto cabin");
+        String lookCabinResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertTrue(lookCabinResponse.contains("potion"), "Return to cabin, player should see the potion again.");
+    }
+
+    @Test
+    void testGotoNowhere() {
+        // 1. player wanna goto bristol
+        String response = sendCommandToServer("simon: please goto bristol now").toLowerCase();
+        // 2. response should contain "cannot goto"
+        assertTrue(response.contains("cannot go"), "Game should deny illegal goto.");
+        // 3. check the player still in the cabin, goto no where
+        String lookCabinResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertTrue(lookCabinResponse.contains("trapdoor"), "player should still see the trapdoor as he/she did not go to other place.");
+        assertTrue(lookCabinResponse.contains("axe"), "player should still see the axe as he/she did not go to other place.");
+    }
+
+    //@Test
+    //void testGotoMultiplePlaces() {
+        // 假设我们要测试的房间是森林，它有去 cabin 的路
+        // 为了测试触发 size > 1，我们可以故意在句子里塞进多个目的地名字
+        // （具体要看你的地图里哪个房间有两条以上的出路，这里假设森林可以去 cabin，其实基础地图 cabin 只有一条出路 forest）
+
+        // 假设当前在房间A，有通往 B 和 C 的路。玩家试图同时去两个地方：
+        // sendCommandToServer("simon: goto B and C");
+
+        // 验证玩家是不是还在原地
+        // String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        // assertTrue(lookResponse.contains("A房间的特有物品"), "试图同时去两个地方应该被拦截，留在原地");
     }
 
 }

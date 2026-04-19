@@ -99,21 +99,18 @@ public final class GameServer {
                 }
                 players.put(playerName, currentPlayer);
             }
-            String firstActionToken = actionCommand.split(" ")[0];
-            switch (firstActionToken) {
-                case "inventory":
-                case "inv":
-                    return handleInv(currentPlayer);
-                case "get":
-                    return handleGet(currentPlayer, actionCommand);
-                case "drop":
-                    return handleDrop(currentPlayer, actionCommand);
-                case "goto":
-                    return handleGoto(currentPlayer, actionCommand);
-                case "look":
-                    return handleLook(currentPlayer);
-                default:
-                    return handleCustomAction(currentPlayer, actionCommand);
+            if (actionCommand.contains("inv") || actionCommand.contains("inventory")) {
+                return handleInv(currentPlayer);
+            } else if (actionCommand.contains("get")) {
+                return handleGet(currentPlayer, actionCommand);
+            } else if (actionCommand.contains("drop")) {
+                return handleDrop(currentPlayer, actionCommand);
+            } else if (actionCommand.contains("goto")) {
+                return handleGoto(currentPlayer, actionCommand);
+            } else if (actionCommand.contains("look")) {
+                return handleLook(currentPlayer);
+            } else {
+                return "Error: Invalid command";
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -333,7 +330,7 @@ public final class GameServer {
     }
 
     /**
-     * Pickes up a specified artefact from current location
+     * Picks up a specified artefact from current location
      * and adds it to the player's inventory
      *
      * @param
@@ -378,7 +375,31 @@ public final class GameServer {
      * @return
      */
     private String handleGoto(Player player, String actionCommand) {
-
+        // 1. get the currentRoom the player is in
+        Location currentLocation = player.getCurrentLocation();
+        HashMap<String, Location> allPaths = currentLocation.getAllPaths();
+        if (allPaths == null) {
+            return "There is nowhere to go.";
+        }
+        // 2. check which room is mentioned in the command
+        ArrayList<String> mentionedLocations = new ArrayList<>();
+        for (String locationName : allPaths.keySet()) {
+            if (actionCommand.contains(locationName)) {
+                mentionedLocations.add(locationName);
+            }
+        }
+        // 3. check the size of mentionedLocation
+        if (mentionedLocations.isEmpty()) {
+            return "You cannot go there from here." ;
+        }
+        if (mentionedLocations.size() > 1) {
+            return "You can only go to one place.";
+        }
+        if (mentionedLocations.size() == 1) {
+            // 4. go to the location
+            player.setCurrentLocation(allPaths.get(mentionedLocations.get(0)));
+            return "Now you are in " + player.getCurrentLocation().getDescription();
+        }
         return "";
     }
 
