@@ -47,7 +47,7 @@ public final class GameServer {
 
     /**
     * Do not change the following method signature or we won't be able to mark your submission
-    * Instanciates a new server instance, specifying a game with some configuration files
+    * Instantiates a new server instance, specifying a game with some configuration files
     *
     * @param entitiesFile The game configuration file containing all game entities to use in your game
     * @param actionsFile The game configuration file containing all game actions to use in your game
@@ -87,6 +87,11 @@ public final class GameServer {
             String playerName = partsOfCommand[0].trim().toLowerCase();
             String actionCommand = cleanCommand(partsOfCommand[1]);
 
+            // ONLY perform one action at a time
+            if (hasMultipleCommands(actionCommand)) {
+                return "Error: You can only perform one action at a time.";
+            }
+
             // check if the current player is already in the players
             Player currentPlayer;
             if (players.containsKey(playerName)) {
@@ -110,7 +115,7 @@ public final class GameServer {
             } else if (actionCommand.contains("look")) {
                 return handleLook(currentPlayer);
             } else {
-                return "Error: Invalid command";
+                return handleCustomAction(currentPlayer, actionCommand);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -333,38 +338,42 @@ public final class GameServer {
      * Picks up a specified artefact from current location
      * and adds it to the player's inventory
      *
-     * @param
-     * @return
+     * @param player The current player executing the command
+     * @param actionCommand The cleaned command string entered by the player
+     * @return A String describing the result of the action
      */
     private String handleGet(Player player, String actionCommand) {
         Location currentLocation = player.getCurrentLocation();
+        int matchCount = 0;
         HashMap<String, Artefact> roomArtefacts = currentLocation.getAllArtefacts();
-        // multiple entities to get
+
+        // UNABLE: multiple entities to get
         // to check what is mentioned in the actionCommand from allArtefacts
         ArrayList<Artefact> mentionedArtefacts = new ArrayList<>();
         for (String artefactName : roomArtefacts.keySet()){
             if (actionCommand.contains(artefactName)){
+                matchCount++;
                 mentionedArtefacts.add(roomArtefacts.get(artefactName));
             }
         }
+
         // if nothing is mentioned
         if (mentionedArtefacts.isEmpty()) {
             return "There is nothing like that here to pick up.";
         }
-
-        StringBuilder pickedUpItems = new StringBuilder();
-        for (Artefact artefact : mentionedArtefacts) {
-            String artefactName = artefact.getName();
-            currentLocation.removeArtefact(artefactName);
-            player.addArtefact(artefact);
-            pickedUpItems.append(artefactName).append(",");
+        else if (matchCount > 1) {
+            return "Error: You cannot get multiple items at once (Composite command not supported).";
         }
-        // strip ',' in the end
-        String result = pickedUpItems.toString();
-        result = result.substring(0, result.length() - 1);
+        else {
+            // matchCount == 1
+            // from ArrayList to get the ONLY one artefact
+            Artefact targetArtefact = mentionedArtefacts.get(0);
 
-        return "You picked up: " + result + ".";
+            currentLocation.removeArtefact(targetArtefact.getName());
+            player.addArtefact(targetArtefact);
 
+            return "You picked up a " + targetArtefact.getName() + ".";
+        }
     }
 
     /**
@@ -407,13 +416,15 @@ public final class GameServer {
      * Puts down an artefact from player's inventory
      * and places it into the current location
      *
-     * @param
-     * @return
+     * @param player The current player executing the command
+     * @param actionCommand The cleaned command string entered by the player
+     * @return A String describing the result of the action
      */
     private String handleDrop(Player player, String actionCommand) {
+        int matchCount = 0;
         Location currentLocation = player.getCurrentLocation();
         HashMap<String, Artefact> inventory = player.getInventory();
-        //
+
         ArrayList<Artefact> mentionedArtefacts = new ArrayList<>();
         for (String artefactName : inventory.keySet()) {
             if  (actionCommand.contains(artefactName)) {
@@ -423,17 +434,16 @@ public final class GameServer {
         if (mentionedArtefacts.isEmpty()) {
             return "There is nothing like that here to drop.";
         }
-        StringBuilder droppedItems = new StringBuilder();
-        for (Artefact targetArtefact : mentionedArtefacts) {
-            String artefactName = targetArtefact.getName();
-            // player drop the item to the currentLocation
-            player.removeArtefact(artefactName);
-            currentLocation.addArtefact(targetArtefact);
-            droppedItems.append(artefactName).append(",");
+        else if (mentionedArtefacts.size() > 1) {
+            return "Error: You cannot drop multiple items at once (Composite command not supported).";
         }
-        String result = droppedItems.toString();
-        result = result.substring(0, result.length() - 1);
-        return "You dropped: " + result + ".";
+        else {
+            Artefact targetArtefact = mentionedArtefacts.get(0);
+            player.removeArtefact(targetArtefact.getName());
+            currentLocation.addArtefact(targetArtefact);
+
+            return "You dropped the " + targetArtefact.getName() + ".";
+        }
 
     }
 
@@ -512,12 +522,17 @@ public final class GameServer {
         for (GameAction gameAction : gameActions) {
             // 1. check if the player's command contains any trigger words for this action
             if (isActionTriggered(gameAction, actionCommand)) {
-                // 2. verify if the player and the room have all the required subjects
-                if (verifySubjects(currentPlayer, gameAction)) {
-                    // 3. execute the consumption and production of entities
-                    executeEffects(currentPlayer, gameAction);
-                    return gameAction.getNarration();
+                // 2. verify if the command involves at least one subject
+                if (countMentionedSubjects(gameAction, actionCommand) >= 1) {
+                    // 3. verify if the player and the room have all the required subjects
+                    if (verifySubjects(currentPlayer, gameAction)) {
+
+                        // 4. execute the consumption and production of entities
+                        executeEffects(currentPlayer, gameAction);
+                        return gameAction.getNarration();
+                    }
                 }
+
             }
         }
         // fallback message if no actions were triggered or subjects were missing
@@ -597,6 +612,44 @@ public final class GameServer {
             }
             // TODO (Optional depending on spec): What if the produced entity is health?
         }
+    }
+
+    /**
+     * Helper 4: Mentioned Subjects Counter
+     * Checks how many subjects required by the action are actually explicitly typed in the command.
+     */
+    private int countMentionedSubjects(GameAction gameAction, String actionCommand) {
+        int count = 0;
+        for (String subject : gameAction.getSubjects()) {
+            if (actionCommand.contains(subject)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean hasMultipleCommands(String actionCommand) {
+        int actionCount = 0;
+
+        // 1. scan the basic command
+        if (actionCommand.contains("look")) actionCount++;
+        if (actionCommand.contains("inv") || actionCommand.contains("inventory")) actionCount++;
+        if (actionCommand.contains("get")) actionCount++;
+        if (actionCommand.contains("drop")) actionCount++;
+        if (actionCommand.contains("goto")) actionCount++;
+
+        // 2. scan the customer action
+        for (GameAction gameAction : gameActions) {
+            for (String trigger : gameAction.getTriggers()) {
+                if (actionCommand.contains(trigger)) {
+                    actionCount++;
+                    break;
+                }
+            }
+        }
+
+        // 3. if actionCount > 1 that is illegal
+        return actionCount > 1;
     }
 
     /**
