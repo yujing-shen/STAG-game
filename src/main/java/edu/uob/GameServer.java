@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.Array;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Paths;
@@ -37,6 +38,7 @@ public final class GameServer {
     private HashMap<String, Player> players = new HashMap<>();
     private HashSet<GameAction> gameActions = new HashSet<>();
     private Location startingLocation = null;
+    private HashSet<String> allGameEntities = new HashSet<>();
 
     public static void main(String[] args) throws IOException {
         File entitiesFile = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
@@ -54,13 +56,23 @@ public final class GameServer {
     */
     public GameServer(File entitiesFile, File actionsFile) {
         // TODO implement your server logic here
-        loadEntitiesFile(entitiesFile);
-        try {
-            loadActionsFile(actionsFile);
-        } catch (Exception e) {
-            System.err.println("Error loading actions file");
-            e.printStackTrace();
-        }
+
+        // 1. Parse DOT file for entities and world map
+        DOTParser dotParser = new DOTParser();
+        dotParser.parse(entitiesFile);
+
+        // Retrieve parsed map data
+        this.gameMap = dotParser.getGameMap();
+        this.startingLocation = dotParser.getStartingLocation();
+        this.allGameEntities = dotParser.getAllGameEntities();
+
+        // 2. Parse XML file for custom actions
+        XMLParser xmlParser = new XMLParser();
+        xmlParser.parse(actionsFile);
+
+        // Retrieve parsed action data
+        this.gameActions = xmlParser.getGameActions();
+
 
     }
 
@@ -125,194 +137,6 @@ public final class GameServer {
     }
 
 
-
-    /**
-     * Parse the file to the graph
-     *
-     * @param entitiesFile The file to parse
-     */
-    private void loadEntitiesFile(File entitiesFile) {
-        try {
-            // 1. Create a new parser
-            Parser parser = new Parser();
-            // 2. FileReader
-            FileReader reader = new FileReader(entitiesFile);
-            // 3. Parse
-            parser.parse(reader);
-            // 4. Get the layout graph
-            Graph layoutGraph = parser.getGraphs().get(0);
-            // 5. Get the subgraph locations and paths
-            ArrayList<Graph> topSubgraphs = layoutGraph.getSubgraphs();
-            for (Graph subgraph : topSubgraphs) {
-                String graphId = subgraph.getId().getId();
-
-                if (graphId.equals("locations")) {
-                    parseLocations(subgraph);
-                } else if (graphId.equals("paths")) {
-                    parsePaths(subgraph);
-                }
-            }
-
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
-        }
-
-    }
-
-    /**
-     * Parse the actionFile
-     * @param actionsFile The file of actions to be parsed
-     */
-    private void loadActionsFile(File actionsFile) throws IOException, SAXException, ParserConfigurationException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document document = builder.parse(actionsFile);
-        document.getDocumentElement().normalize();
-        // Get all the <action> nodes
-        NodeList nodeList = document.getElementsByTagName("action");
-        for (int i = 0; i < nodeList.getLength(); i++) {
-            Node actioNode = nodeList.item(i);
-            if (actioNode.getNodeType() == Node.ELEMENT_NODE) {
-                Element actionElement = (Element) actioNode;
-
-                HashSet<String> triggersSet = extractEntities(actionElement,"triggers","keyphrase");
-                HashSet<String> subjectsSet = extractEntities(actionElement,"subjects","entity");
-                HashSet<String> consumedSet = extractEntities(actionElement,"consumed","entity");
-                HashSet<String> producedSet = extractEntities(actionElement,"produced","entity");
-                String narration = "";
-
-                NodeList narrationList = actionElement.getElementsByTagName("narration");
-                if (narrationList.getLength() > 0) {
-                    narration = narrationList.item(0).getTextContent();
-                }
-                GameAction currentAction = new GameAction(triggersSet, subjectsSet, consumedSet, producedSet, narration);
-                gameActions.add(currentAction);
-            }
-        }
-
-    }
-
-    /**
-     * extract the text from specified layer
-     * @param actionElement
-     * @param parentTag
-     * @param childTag
-     * @return
-     */
-    private HashSet<String> extractEntities(Element actionElement, String parentTag, String childTag) {
-        HashSet<String> resultSet = new HashSet<>();
-        // Find the parent
-        NodeList parentList = actionElement.getElementsByTagName(parentTag);
-        if  (parentList.getLength() > 0) {
-            Element parentElement = (Element) parentList.item(0);
-
-            // Find the inner child
-            NodeList childList = parentElement.getElementsByTagName(childTag);
-
-            for (int i = 0; i < childList.getLength(); i++) {
-                resultSet.add(childList.item(i).getTextContent());
-            }
-        }
-        return resultSet;
-    }
-
-    /**
-     * Parse the locations
-     * @param locationsGraph The graph of locations
-     */
-    private void parseLocations(Graph locationsGraph) {
-        try {
-            ArrayList<Graph> locationsGraphSubgraphs = locationsGraph.getSubgraphs();
-            for (Graph cluster : locationsGraphSubgraphs) {
-                // get the nodes of this cluster
-                ArrayList<com.alexmerz.graphviz.objects.Node> nodes = cluster.getNodes(false);
-                if (nodes.size() > 0) {
-                    com.alexmerz.graphviz.objects.Node locNode = nodes.get(0);
-                    String locationName = locNode.getId().getId();
-                    String locationDescription = locNode.getAttribute("description");
-
-                    if (locationDescription != null) {
-                        Location currentLocation = new Location(locationName, locationDescription);
-                        gameMap.put(locationName, currentLocation);
-
-                        if (startingLocation == null) {
-                            startingLocation = currentLocation;
-                        }
-
-                        // after the room is built, put all the entities in the room immediately
-                        parseLocationEntities(currentLocation, cluster);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Parse the entities in the location
-     * @param location currentLocation
-     * @param clusterGraph
-     */
-    private void parseLocationEntities(Location location, Graph clusterGraph) {
-        // artefacts & furniture & character
-        for (Graph subgraph : clusterGraph.getSubgraphs()) {
-            String graphId = subgraph.getId().getId();
-            for (com.alexmerz.graphviz.objects.Node node : subgraph.getNodes(false)) {
-
-                String name = node.getId().getId();
-                String description = node.getAttribute("description");
-
-                // Real node has the description
-                if (description != null) {
-                    switch (graphId) {
-                        case "artefacts":
-                            location.addArtefact(new Artefact(name, description));
-                            // System.out.println("Artefacts added." + name + " -> " + location.getName());
-                            break;
-                        case "furniture":
-                            location.addFurniture(new Furniture(name, description));
-                            break;
-                        case "characters":
-                            location.addCharacter(new Character(name, description));
-                            break;
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Parse the paths
-     * @param pathsGraph The graph of path
-     */
-    private void parsePaths(Graph pathsGraph) {
-        try {
-            ArrayList<Edge> edges = pathsGraph.getEdges();
-            for (Edge edge : edges) {
-                // Get the name of start
-                String fromName = edge.getSource().getNode().getId().getId();
-                // Get the name of destination
-                String toName = edge.getTarget().getNode().getId().getId();
-
-                // Get the start location and destination location
-                Location startLocation = gameMap.get(fromName);
-                Location endLocation = gameMap.get(toName);
-                if (startLocation != null && endLocation != null) {
-                    startLocation.addPath(endLocation);
-                } else {
-                    System.out.println("Warning: try to connect non-existent location: " + fromName + " -> " + toName);
-                }
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-
     /**
      * Lists all of the artefacts currently in the possession of the player
      *
@@ -343,36 +167,36 @@ public final class GameServer {
      * @return A String describing the result of the action
      */
     private String handleGet(Player player, String actionCommand) {
-        Location currentLocation = player.getCurrentLocation();
-        int matchCount = 0;
-        HashMap<String, Artefact> roomArtefacts = currentLocation.getAllArtefacts();
+        // 1. scan how many entities are mentioned in the command
+        ArrayList<String> mentionedEntities = getMentionedEntities(actionCommand);
 
-        // UNABLE: multiple entities to get
-        // to check what is mentioned in the actionCommand from allArtefacts
-        ArrayList<Artefact> mentionedArtefacts = new ArrayList<>();
-        for (String artefactName : roomArtefacts.keySet()){
-            if (actionCommand.contains(artefactName)){
-                matchCount++;
-                mentionedArtefacts.add(roomArtefacts.get(artefactName));
-            }
-        }
-
-        // if nothing is mentioned
-        if (mentionedArtefacts.isEmpty()) {
+        // 2. check if the user mentioned nothing
+        if (mentionedEntities.isEmpty()) {
             return "There is nothing like that here to pick up.";
         }
-        else if (matchCount > 1) {
-            return "Error: You cannot get multiple items at once (Composite command not supported).";
-        }
-        else {
-            // matchCount == 1
-            // from ArrayList to get the ONLY one artefact
-            Artefact targetArtefact = mentionedArtefacts.get(0);
 
-            currentLocation.removeArtefact(targetArtefact.getName());
+        // 3. check extraneous entities & composite commands
+        // NOT allowed "get the potion and axe) AND "get key from forest"
+        else if (mentionedEntities.size() > 1) {
+            return "Error: Extraneous entities detected. You can only specify one item at a time.";
+        }
+
+        // 4. since the command is valid, extract the ONLY mentioned entity
+        String targetEntityName = mentionedEntities.get(0);
+        Location currentLocation = player.getCurrentLocation();
+        HashMap<String, Artefact> roomArtefacts = currentLocation.getAllArtefacts();
+
+        // 5. physical verification: is this entity actually an artefact on the floor?
+        if (roomArtefacts.containsKey(targetEntityName)) {
+            Artefact targetArtefact = roomArtefacts.get(targetEntityName);
+
+            // execute the transfer
+            currentLocation.removeArtefact(targetEntityName);
             player.addArtefact(targetArtefact);
 
-            return "You picked up a " + targetArtefact.getName() + ".";
+            return "You picked up a " + targetEntityName + ".";
+        } else {
+            return "Error: You cannot get that here.";
         }
     }
 
@@ -421,30 +245,37 @@ public final class GameServer {
      * @return A String describing the result of the action
      */
     private String handleDrop(Player player, String actionCommand) {
-        int matchCount = 0;
+        // 1. scan how many global entities are mentioned in the command
+        ArrayList<String> mentionedEntities = getMentionedEntities(actionCommand);
+
+        // 2. check if the user mentioned nothing
+        if (mentionedEntities.isEmpty()) {
+            return "You are not meant to drop anything";
+        }
+
+        // 3. check extraneous entities & composite commands
+        // NOT allowed "drop potion and axe" AND " drop key from forest"
+        else if (mentionedEntities.size() > 1) {
+            return "Error: Extraneous entities detected. You can only specify one item at a time.";
+        }
+
+        // 4. since the command is valid, extract the ONLY mentioned entity
+        String targetEntityName = mentionedEntities.get(0);
         Location currentLocation = player.getCurrentLocation();
         HashMap<String, Artefact> inventory = player.getInventory();
 
-        ArrayList<Artefact> mentionedArtefacts = new ArrayList<>();
-        for (String artefactName : inventory.keySet()) {
-            if  (actionCommand.contains(artefactName)) {
-                mentionedArtefacts.add(inventory.get(artefactName));
-            }
-        }
-        if (mentionedArtefacts.isEmpty()) {
-            return "There is nothing like that here to drop.";
-        }
-        else if (mentionedArtefacts.size() > 1) {
-            return "Error: You cannot drop multiple items at once (Composite command not supported).";
-        }
-        else {
-            Artefact targetArtefact = mentionedArtefacts.get(0);
-            player.removeArtefact(targetArtefact.getName());
+        // 5. physical verification : is this entity actually in the inventory?
+        if (inventory.containsKey(targetEntityName)) {
+            Artefact targetArtefact = inventory.get(targetEntityName);
+
+            // execute the transfer
+            inventory.remove(targetEntityName);
             currentLocation.addArtefact(targetArtefact);
 
-            return "You dropped the " + targetArtefact.getName() + ".";
+            return "You dropped a " + targetEntityName + ".";
+        } else {
+            return "Error: You cannot drop that here.";
         }
-
     }
 
     /**
@@ -517,26 +348,65 @@ public final class GameServer {
 
     /**
      * Main engine for handling all custom XML actions.
+     * Enforces "Extraneous Entities", "Partial Commands", and "Ambiguous Commands" rules.
+     *
+     * @param currentPlayer The current player executing the command
+     * @param actionCommand The cleaned command string entered by the player
+     * @return A String describing the result of the action
      */
     private String handleCustomAction(Player currentPlayer, String actionCommand) {
-        for (GameAction gameAction : gameActions) {
-            // 1. check if the player's command contains any trigger words for this action
-            if (isActionTriggered(gameAction, actionCommand)) {
-                // 2. verify if the command involves at least one subject
-                if (countMentionedSubjects(gameAction, actionCommand) >= 1) {
-                    // 3. verify if the player and the room have all the required subjects
-                    if (verifySubjects(currentPlayer, gameAction)) {
+        // 1. scan for all game entities mentioned in the command
+        ArrayList<String> mentionedEntities = getMentionedEntities(actionCommand);
 
-                        // 4. execute the consumption and production of entities
-                        executeEffects(currentPlayer, gameAction);
-                        return gameAction.getNarration();
+        // prepare for ambiguous commands defense: create a list for valid candidate ations
+        ArrayList<GameAction> validActions = new ArrayList<>();
+
+        for (GameAction gameAction : gameActions) {
+            // 2. trigger word check: does the command contain a valid trigger for this action?
+            if (isActionTriggered(gameAction, actionCommand)) {
+                // 3. partial command rule: at least 1 subject must be explicitly mentioned
+                if (countMentionedSubjects(gameAction, actionCommand) >= 1) {
+
+                    // 4. extraneous entities defense line
+                    boolean hasExtraneous = false;
+                    for (String entityName : mentionedEntities) {
+                        // if the mentioned entity is neither a subject, nor consumed, nor produced by this action...
+                        if (!gameAction.getSubjects().contains(entityName) &&
+                            !gameAction.getConsumed().contains(entityName) &&
+                            !gameAction.getProduced().contains(entityName)) {
+
+                            hasExtraneous = true;
+                            break;
+                        }
+                    }
+
+                    // if the command contains extraneous entities for this specific action
+                    // skip this action and proceed to check the next one.
+                    if (hasExtraneous) {
+                        continue;
+                    }
+
+                    // 5. physical verification : are the required subjects actually in the room or inventory?
+                    if (verifySubjects(currentPlayer, gameAction)) {
+                        validActions.add(gameAction);
                     }
                 }
-
             }
         }
-        // fallback message if no actions were triggered or subjects were missing
-        return "You cannot do that here, or you do not have the required items.";
+
+        // 6. final verdict: handle "ambiguous commands"
+        if (validActions.isEmpty()) {
+            return "You cannot do that here, or you do not have the required items.";
+        }
+        else if (validActions.size() > 1) {
+            // ambiguity caught1 multiple actions are fully valid and performable
+            // (e.h, "open door" or "open car" with a shared key
+            return "Error: Ambiguous command. There is more than one valid action possible.";
+        } else {
+            GameAction finalGameAction = validActions.get(0);
+            executeEffects(currentPlayer, finalGameAction);
+            return finalGameAction.getNarration();
+        }
     }
 
     /**
@@ -650,6 +520,22 @@ public final class GameServer {
 
         // 3. if actionCount > 1 that is illegal
         return actionCount > 1;
+    }
+
+    /**
+     *  scan the command and return all the entities
+     * @param actionCommand
+     * @return
+     */
+    private ArrayList<String> getMentionedEntities (String actionCommand) {
+        ArrayList<String> mentionedEntities = new ArrayList<>();
+
+        for (String entityName : allGameEntities) {
+            if (actionCommand.contains(entityName)) {
+                mentionedEntities.add(entityName);
+            }
+        }
+        return mentionedEntities;
     }
 
     /**
