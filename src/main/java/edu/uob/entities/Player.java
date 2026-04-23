@@ -8,12 +8,12 @@ public class Player extends GameEntity {
     private HashMap<String,Artefact> inventory;
     private Location currentLocation;
     private int health;
-
+    public static final int MAX_HEALTH = 3;
     public Player(String name, String description) {
         super(name, description);
         this.inventory = new HashMap<>();
         this.currentLocation = null;
-        this.health = 3;
+        this.health = MAX_HEALTH;
     }
 
     // inventory : get all the artefacts from the inventory
@@ -47,5 +47,15 @@ public class Player extends GameEntity {
 
     public void setHealth(int health) {
         this.health = health;
+    }
+
+    public void increaseHealth() {
+        this.health++;
+        if (this.health > MAX_HEALTH) this.health = MAX_HEALTH;
+    }
+
+    public void decreaseHealth() {
+        this.health--;
+        if (this.health < 0) this.health = 0;
     }
 }

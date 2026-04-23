@@ -32,6 +32,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import static edu.uob.entities.Player.MAX_HEALTH;
+
 public final class GameServer {
 
     private static final char END_OF_TRANSMISSION = 4;
@@ -128,6 +130,8 @@ public final class GameServer {
                 return handleGoto(currentPlayer, actionCommand);
             } else if (actionCommand.contains("look")) {
                 return handleLook(currentPlayer);
+            } else if (actionCommand.contains("health")) {
+                return "Your current health is: " + currentPlayer.getHealth();
             } else {
                 return handleCustomAction(currentPlayer, actionCommand);
             }
@@ -425,8 +429,13 @@ public final class GameServer {
             return "Error: Ambiguous command. There is more than one valid action possible.";
         } else {
             GameAction finalGameAction = validActions.get(0);
-            executeEffects(currentPlayer, finalGameAction);
-            return finalGameAction.getNarration();
+            boolean isDead = executeEffects(currentPlayer, finalGameAction);
+
+            if (!isDead) {
+                return finalGameAction.getNarration();
+            } else {
+                return "You died and lost all of your items, you must return to the start if the game";
+            }
         }
     }
 
@@ -464,7 +473,7 @@ public final class GameServer {
     /**
      * Helper 3: Mass and Energy Transfer (Executing Effects)
      */
-    private void executeEffects(Player player, GameAction action) {
+    private boolean executeEffects(Player player, GameAction action) {
         Location currentLocation = player.getCurrentLocation();
         Location storeroom = gameMap.get("storeroom");
 
@@ -482,7 +491,10 @@ public final class GameServer {
                 Furniture furniture = currentLocation.removeFurniture(entityName);
                 storeroom.addFurniture(furniture);
             }
-            // TODO (Optional depending on spec): What if the consumed entity is health?
+            else if (entityName.equals("health")) {
+                player.decreaseHealth();
+            }
+
         }
 
         // --- Execute Production ---
@@ -501,8 +513,29 @@ public final class GameServer {
                 Location newPath = gameMap.get(entityName);
                 currentLocation.addPath(newPath);
             }
-            // TODO (Optional depending on spec): What if the produced entity is health?
+            else if (entityName.equals("health")) {
+                player.increaseHealth();
+            }
         }
+
+        // if health is 0, drop all the items of inv to currentLocation
+
+        if (player.getHealth() == 0) {
+            HashMap<String,Artefact> inv = player.getInventory();
+
+            ArrayList<Artefact> itemsToDrop = new ArrayList<>(inv.values());
+            for (Artefact artefact : itemsToDrop) {
+                player.removeArtefact(artefact.getName());
+                currentLocation.addArtefact(artefact);
+            }
+            // AND send the player to starting location
+            player.setCurrentLocation(startingLocation);
+            player.setHealth(MAX_HEALTH);
+            return true; // player is dead
+        }
+        return false; // player is not dead
+
+
     }
 
     /**
