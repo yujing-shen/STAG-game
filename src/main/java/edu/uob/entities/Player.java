@@ -7,11 +7,13 @@ import java.util.HashMap;
 public class Player extends GameEntity {
     private HashMap<String,Artefact> inventory;
     private Location currentLocation;
+    private int health;
 
     public Player(String name, String description) {
         super(name, description);
         this.inventory = new HashMap<>();
         this.currentLocation = null;
+        this.health = 3;
     }
 
     // inventory : get all the artefacts from the inventory
@@ -36,7 +38,14 @@ public class Player extends GameEntity {
         this.currentLocation = currentLocation;
     }
 
+    // health
 
 
+    public int getHealth() {
+        return health;
+    }
 
+    public void setHealth(int health) {
+        this.health = health;
+    }
 }
