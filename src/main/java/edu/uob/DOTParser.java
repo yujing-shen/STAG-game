@@ -25,13 +25,13 @@ import java.util.HashSet;
  * and all entities from the DOT configuration file.
  */
 public class DOTParser {
-    private HashMap<String, Location> gameMap;
+    private HashMap<String, Location> gameMap = new HashMap<>();
     // A comprehensive set containing the names of EVERY entity in the game
     // (locations, artefacts, furniture, characters) for Extraneous Entity checking
-    private HashSet<String> allGameEntities;
+    private HashSet<String> allGameEntities = new HashSet<>();
 
     // The designated starting location for all new players
-    private Location startingLocation;
+    private Location startingLocation = null;
 
     public DOTParser(HashMap<String, Location> gameMap, HashSet<String> allGameEntities, Location startingLocation) {
         this.gameMap = new HashMap<>();

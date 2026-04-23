@@ -15,7 +15,7 @@ import java.util.HashSet;
  * from the actions XML configuration file.
  */
 public class XMLParser {
-    private HashSet<GameAction> gameActions;
+    private HashSet<GameAction> gameActions = new HashSet<>();
 
     public XMLParser(HashSet<GameAction> gameActions) {
         this.gameActions = gameActions;
