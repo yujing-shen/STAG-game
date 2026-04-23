@@ -28,6 +28,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -97,6 +98,7 @@ public final class GameServer {
 
             // clean the parts of command
             String playerName = partsOfCommand[0].trim().toLowerCase();
+            if (!playerName.matches("^[a-z '\\-]+$")) return "Error: Invalid player name";
             String actionCommand = cleanCommand(partsOfCommand[1]);
 
             // ONLY perform one action at a time
@@ -285,9 +287,9 @@ public final class GameServer {
      * @param
      * @return
      */
-    private String handleLook(Player player) {
+    private String handleLook(Player currentPlayer) {
         // get the current room where current player is in
-        Location currentLocation = player.getCurrentLocation();
+        Location currentLocation = currentPlayer.getCurrentLocation();
 
         StringBuilder result = new StringBuilder();
         // 1. basic description of the location
@@ -324,6 +326,25 @@ public final class GameServer {
                 result.append(location.getName()).append("\n");
             }
         }
+        // 6. other players
+        ArrayList<Player> playersInRoom = new ArrayList<>();
+
+        // scan other players
+        for (Player p : players.values()) {
+            // check if the other players are in the same location as the current player
+            if (p.getCurrentLocation().equals(currentLocation) &&
+                    !p.getName().equals(currentPlayer.getName())) {
+                playersInRoom.add(p);
+            }
+        }
+        if  (!playersInRoom.isEmpty()) {
+            result.append("You can see the following players: \n");
+
+            for (Player p : playersInRoom) {
+                    result.append(p.getName()).append(" - ").append(p.getDescription()).append("\n");
+                }
+            }
+
         // System.out.println(result.toString());
         return result.toString();
 
