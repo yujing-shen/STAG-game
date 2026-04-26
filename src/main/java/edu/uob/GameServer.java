@@ -44,8 +44,8 @@ public final class GameServer {
     private HashSet<String> allGameEntities = new HashSet<>();
 
     public static void main(String[] args) throws IOException {
-        File entitiesFile = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
-        File actionsFile = Paths.get("config" + File.separator + "basic-actions.xml").toAbsolutePath().toFile();
+        File entitiesFile = Paths.get("config" + File.separator + "extended-entities.dot").toAbsolutePath().toFile();
+        File actionsFile = Paths.get("config" + File.separator + "extended-actions.xml").toAbsolutePath().toFile();
         GameServer server = new GameServer(entitiesFile, actionsFile);
         server.blockingListenOn(8888);
     }
@@ -366,7 +366,7 @@ public final class GameServer {
         // 2. strip all of punctuations
         cleanStr = cleanStr.replace("\\p{Punct}", " ");
         // 3. combine multiple and consecutive space to one space
-        cleanStr = cleanStr.replace("\\s+", "").trim();
+        cleanStr = cleanStr.replaceAll("\\s+", " ").trim();
 
         return cleanStr;
     }
@@ -384,7 +384,7 @@ public final class GameServer {
         ArrayList<String> mentionedEntities = getMentionedEntities(actionCommand);
 
         // prepare for ambiguous commands defense: create a list for valid candidate ations
-        ArrayList<GameAction> validActions = new ArrayList<>();
+         ArrayList<GameAction> validActions = new ArrayList<>();
 
         for (GameAction gameAction : gameActions) {
             // 2. trigger word check: does the command contain a valid trigger for this action?
@@ -418,6 +418,7 @@ public final class GameServer {
                 }
             }
         }
+
 
         // 6. final verdict: handle "ambiguous commands"
         if (validActions.isEmpty()) {
@@ -460,9 +461,10 @@ public final class GameServer {
             boolean inInv = currentPlayer.getInventory().containsKey(subject);
             boolean inRoomArtefacts = currentLocation.getAllArtefacts().containsKey(subject);
             boolean inRoomFurniture = currentLocation.getAllFurniture().containsKey(subject);
+            boolean inRoomCharacters = currentLocation.getAllCharacters().containsKey(subject);
 
             // If a required subject is nowhere to be found, verification fails immediately
-            if (!inInv && !inRoomArtefacts && !inRoomFurniture) {
+            if (!inInv && !inRoomArtefacts && !inRoomFurniture && !inRoomCharacters) {
                 return false;
             }
         }
@@ -490,6 +492,10 @@ public final class GameServer {
             else if (currentLocation.getAllFurniture().containsKey(entityName)) {
                 Furniture furniture = currentLocation.removeFurniture(entityName);
                 storeroom.addFurniture(furniture);
+            }
+            else if (currentLocation.getAllCharacters().containsKey(entityName)) {
+                Character character = currentLocation.removeCharacter(entityName);
+                storeroom.addCharacter(character);
             }
             else if (entityName.equals("health")) {
                 player.decreaseHealth();
