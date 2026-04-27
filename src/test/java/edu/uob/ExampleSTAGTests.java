@@ -357,6 +357,27 @@ class ExampleSTAGTests {
 
     }
 
+    @Test
+    void testCharacterInteractionAndHealthSystem() {
+        // navigate to the cellar
+        sendCommandToServer("simon: goto forest");
+        sendCommandToServer("simon: get key");
+        sendCommandToServer("simon: goto cabin");
+        sendCommandToServer("simon: open trapdoor");
+        sendCommandToServer("simon: goto cellar");
+        // verify character entity parsing
+        String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertTrue(lookResponse.contains("elf"), "Entity Parsing Error: The Character 'elf' should be parsed from the DOT file and visible in the cellar.");
+        String fightResponse = sendCommandToServer("simon: fight elf").toLowerCase();
+        // The narration should reflect the XML response for this action
+        assertTrue(fightResponse.contains("attack") || fightResponse.contains("health"),
+                "Action Error: Should be able to successfully interact with the Character using a valid custom action.");
+        // verify the Health system and 'consumed' logic
+        String healthResponse = sendCommandToServer("simon: health").toLowerCase();
+        // Assuming starting health is 3, one fight should drop it to 2
+        assertTrue(healthResponse.contains("2"), "Health System Error: Player health should decrease after a combat action that consumes 'health'.");
+    }
+
 
 
 }
