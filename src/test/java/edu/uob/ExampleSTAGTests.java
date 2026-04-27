@@ -136,9 +136,9 @@ class ExampleSTAGTests {
     @Test
     void testAtLeastOneSubject() {
       // 1. test basic action with no subject
-      String response1 = sendCommandToServer("owen: goto ");
-      assertFalse(response1.contains("forest"), "command cannot work with no subject");
-      assertTrue(response1.contains("cannot") || response1.contains("error"), "no subject no goto");
+      sendCommandToServer("owen: goto ");
+      String lookResponse1 = sendCommandToServer("owen: look").toLowerCase();
+      assertTrue(lookResponse1.contains("now you are in a log cabin in the woods."),"You cannot goto other places since the command does not have one subject");
 
       // 2. set up
       sendCommandToServer("owen: goto forest");
@@ -152,7 +152,7 @@ class ExampleSTAGTests {
 
       // 4. test custom action with full subjects (partial command is allowed)
       String response4 = sendCommandToServer("owen: unlock the trapdoor with key");
-      assertTrue(response4.contains("You unlock the trapdoor and see steps leading down into a cellar"), "command should work with one trigger and two subjects.");
+      assertTrue(response4.contains("You unlock the door and see steps leading down into a cellar"), "command should work with one trigger and at least one subject.");
 
       // 5. test custom action with partial subject
       sendCommandToServer("owen: get the axe");
@@ -174,7 +174,7 @@ class ExampleSTAGTests {
         assertFalse(invResponse.contains("potion"), "Potion should not be in inventory due to rejected command.");
         assertFalse(invResponse.contains("axe"), "Axe should not be in inventory due to rejected command.");
 
-        // 3. rtefacts must on the grounf
+        // 3. artefacts must on the ground
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
         assertTrue(lookResponse.contains("potion"), "Potion should still be on the ground.");
         assertTrue(lookResponse.contains("axe"), "Axe should still be on the ground.");
@@ -182,11 +182,9 @@ class ExampleSTAGTests {
 
     @Test
     void testGreedyDrop() {
-        sendCommandToServer("simon: get potion");
-        sendCommandToServer("simon: get axe");
-
+        sendCommandToServer("simon: get the potion");
+        sendCommandToServer("simon: get the axe");
         // Greedy drop
-
         // 1. try to dorp axe and potion
         String dropResponse = sendCommandToServer("simon: quickly drop the axe and potion now").toLowerCase();
         assertTrue(dropResponse.contains("error") || dropResponse.contains("cannot"), "Game should reject composite drop commands.");
@@ -253,18 +251,22 @@ class ExampleSTAGTests {
         assertTrue(lookCabinResponse.contains("axe"), "player should still see the axe as he/she did not go to other place.");
     }
 
-    //@Test
-    //void testGotoMultiplePlaces() {
-        // 假设我们要测试的房间是森林，它有去 cabin 的路
-        // 为了测试触发 size > 1，我们可以故意在句子里塞进多个目的地名字
-        // （具体要看你的地图里哪个房间有两条以上的出路，这里假设森林可以去 cabin，其实基础地图 cabin 只有一条出路 forest）
+    @Test
+    void testGotoMultiplePlaces() {
+      // 1. set up
+      sendCommandToServer("simon: please goto forest");
+      sendCommandToServer("simon: please get the key now");
+      sendCommandToServer("simon: goto cabin");
+      sendCommandToServer("simon: with the key unlock the trapdoor ");
 
-        // 假设当前在房间A，有通往 B 和 C 的路。玩家试图同时去两个地方：
-        // sendCommandToServer("simon: goto B and C");
+      // 2. goto multiple places
+      sendCommandToServer("simon: goto cellar and forest");
 
-        // 验证玩家是不是还在原地
-        // String lookResponse = sendCommandToServer("simon: look").toLowerCase();
-        // assertTrue(lookResponse.contains("A房间的特有物品"), "试图同时去两个地方应该被拦截，留在原地");
+      // 3. look response should still in cabin
+      String lookResponse = sendCommandToServer("simon: look");
+      assertTrue(lookResponse.contains("Now you are in A log cabin in the woods."), "The player should still be in cabin as he/she cannot goto multiple places.");
+      assertTrue(lookResponse.contains("You can see the following furniture: \n" + "trapdoor"), "The player should still be in cabin as he/she cannot goto multiple places.");
+    }
 
 
     @Test
@@ -284,7 +286,7 @@ class ExampleSTAGTests {
     }
 
     @Test
-    // Test the player chop the tree WITHOUT axe
+    // Test the player chop the tree WITHOUT axe (Test point: the INV does not have axe, not the command)
     void testCustomerActionChopTreeWithoutAxe() {
       sendCommandToServer("simon: please goto forest now.");
       String response = sendCommandToServer("simon: chop tree").toLowerCase();
@@ -297,9 +299,12 @@ class ExampleSTAGTests {
     @Test
     // Test the player chop the tree NOT in forest
     void testCustomerActionChopTreeNotInForest() {
-        sendCommandToServer("simon: get axe");
+        sendCommandToServer("simon: get the axe");
         String response = sendCommandToServer("simon: chop tree").toLowerCase();
         assertTrue(response.contains("cannot do that"), "You cannot do that since there is no tree in cabin.");
+        String invResponse = sendCommandToServer("simon: inv").toLowerCase();
+        assertTrue(invResponse.contains("axe"), "The axe should be in inventory");
+        assertFalse(invResponse.contains("log"), "You cannot have log since you cannot chop the tree when you are not in forest.");
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
         // EDGE CASE: Do NOT just assert "log".
         // The room's description is "a log cabin", which will cause a false positive.
@@ -312,6 +317,10 @@ class ExampleSTAGTests {
     void testMultipleCommands() {
         String response = sendCommandToServer("simon: get the axe and goto forest");
         assertTrue(response.contains("Error: You can only perform one action at a time."), "Error: You can only perform one action at a time.");
+        String invResponse = sendCommandToServer("simon: inv").toLowerCase();
+        assertFalse(invResponse.contains("axe"), "The axe should not be in inventory");
+        String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertTrue(lookResponse.contains("cabin"), "The player should still be in cabin.");
 
     }
 
