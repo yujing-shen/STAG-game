@@ -28,6 +28,39 @@ class ExampleSTAGTests {
       "Server took too long to respond (probably stuck in an infinite loop)");
   }
 
+  @Test
+  void testNullCommand() {
+      String response = sendCommandToServer("simon: ");
+      assertTrue(response.contains("Error: No action specified"), "The command is empty.");
+  }
+
+  @Test
+  void testInvalidPlayerName() {
+      String  response = sendCommandToServer("si@mon: ");
+      System.out.println(response);
+      assertTrue(response.contains("Error: Invalid player name"), "The player name is valid.");
+  }
+
+    @Test
+    void testStatePersistence() {
+        server.handleCommand("simon: get potion");
+        // Verify the potion is no longer in the room
+        String lookResponse1 = server.handleCommand("simon: look");
+        assertFalse(lookResponse1.contains("potion"), "Potion should be picked up and no longer in the room.");
+
+        File entitiesFile = Paths.get("config" + File.separator + "extended-entities.dot").toAbsolutePath().toFile();
+        File actionsFile = Paths.get("config" + File.separator + "extended-actions.xml").toAbsolutePath().toFile();
+        // Instantiate a NEW GameServer to simulate a server restart
+        GameServer newServer = new GameServer(entitiesFile, actionsFile);
+
+        // Player 'simon' looks around in the freshly started server
+        String lookResponse2 = newServer.handleCommand("simon: look");
+
+        // Assertion: The potion MUST be back in the starting room!
+        // This proves the game state is loaded afresh and original config files were NOT modified.
+        assertTrue(lookResponse2.contains("potion"), "State leaked! Potion should be back in the room after server restart.");
+    }
+
   // A lot of tests will probably check the game state using 'look' - so we better make sure 'look' works well !
   @Test
   void testLook() {

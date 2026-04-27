@@ -102,6 +102,7 @@ public final class GameServer {
             String playerName = partsOfCommand[0].trim().toLowerCase();
             if (!playerName.matches("^[a-z '\\-]+$")) return "Error: Invalid player name";
             String actionCommand = cleanCommand(partsOfCommand[1]);
+            if (actionCommand.isEmpty()) return "Error: No action specified";
 
             // ONLY perform one action at a time
             if (hasMultipleCommands(actionCommand)) {
@@ -139,7 +140,6 @@ public final class GameServer {
             e.printStackTrace();
             return "Error: Something went wrong executing your command: " + command;
         }
-        //return "";
     }
 
 
