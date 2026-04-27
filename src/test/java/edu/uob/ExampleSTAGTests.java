@@ -17,8 +17,8 @@ class ExampleSTAGTests {
   // Create a new server _before_ every @Test
   @BeforeEach
   void setup() {
-      File entitiesFile = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
-      File actionsFile = Paths.get("config" + File.separator + "basic-actions.xml").toAbsolutePath().toFile();
+      File entitiesFile = Paths.get("config" + File.separator + "extended-entities.dot").toAbsolutePath().toFile();
+      File actionsFile = Paths.get("config" + File.separator + "extended-actions.xml").toAbsolutePath().toFile();
       server = new GameServer(entitiesFile, actionsFile);
   }
 
@@ -74,7 +74,7 @@ class ExampleSTAGTests {
 
     @Test
     void testPunctuation() {
-        sendCommandToServer("owen: GET | POTION!!!???");
+        sendCommandToServer("owen: get | potion!!!???");
         String invResponse = sendCommandToServer("owen: inv").toLowerCase();
         assertTrue(invResponse.contains("potion"), "Failed to parse potion with punctuation");
     }
@@ -88,7 +88,7 @@ class ExampleSTAGTests {
         // 2. Send a decorated custom action command (please chop the tree using the axe)
         String response = sendCommandToServer("owen : please chop the tree using the axe").toLowerCase();
 
-        // 3. Assert 1: The response MUST NOPT contain an error message
+        // 3. Assert 1: The response MUST NOT contain an error message
         assertFalse(response.contains("error") || response.contains("cannot"),
                 "the action triggered successfully");
         // 4. Assert 2: Verify the game state to see if the tree was actually consumed and the log produced
@@ -108,10 +108,11 @@ class ExampleSTAGTests {
 
 
     }
+
     @Test
     void testVariableWhitespace() {
         sendCommandToServer("owen: get        the axe      ");
-        String response = sendCommandToServer("owen: inv").toLowerCase();
+        String response = sendCommandToServer("owen:    inv     ").toLowerCase();
         assertTrue(response.contains("axe"), "Variable whitespace is allowed.");
         sendCommandToServer("owen: goto forest      ");
         sendCommandToServer("owen: cut       down the tree with the axe");
@@ -125,6 +126,10 @@ class ExampleSTAGTests {
     void testMultipleTrigger() {
       String response = sendCommandToServer("owen: get the axe and goto forest").toLowerCase();
       assertTrue(response.contains("error"), "Multiple triggers are not allowed.");
+      String invResponse = sendCommandToServer("owen: inv").toLowerCase();
+      assertFalse(invResponse.contains("axe"), "You cannot get the axe since you only can perform one action.");
+      String lookResponse = sendCommandToServer("owen: look").toLowerCase();
+      assertTrue(lookResponse.contains("now you are in a log cabin in the woods."),"You cannot goto forest since you only can perform one action.");
 
     }
 
