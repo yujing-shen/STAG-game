@@ -133,13 +133,28 @@ class ExampleSTAGTests {
 
     @Test
     void testDecoratedCommandMultiWordTriggerFailure() {
-       // 1. set up
-       sendCommandToServer("owen: get the axe");
-       sendCommandToServer("owen: quickly goto the forest");
-       // 2. split a multi-word trigger
-       // "cut quickly down
+        // [Task 8 Validation] Multi-word triggers CANNOT be separated by decorative words
+        // We test the FAILURES first to guarantee the game state remains untouched!
 
+        File testEntities = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
+        File testActions = Paths.get("config" + File.separator + "test-nlp-actions.xml").toAbsolutePath().toFile();
+        GameServer nlpTestServer = new GameServer(testEntities, testActions);
 
+        // 1. Destructive Test 1: Splitting the trigger phrase.
+        // Inserting "quickly" inside "drink up" should completely break the matching.
+        String splitTriggerResponse = nlpTestServer.handleCommand("simon: drink quickly up the potion").toLowerCase();
+        assertTrue(splitTriggerResponse.contains("error") || splitTriggerResponse.contains("cannot"),
+                "NLP Error: Multi-word triggers CANNOT have decorative words inserted inside them.");
+
+        // 2. Destructive Test 2: Reversing the word order of the trigger phrase.
+        String reversedTriggerResponse = nlpTestServer.handleCommand("simon: up drink the potion").toLowerCase();
+        assertTrue(reversedTriggerResponse.contains("error") || reversedTriggerResponse.contains("cannot"),
+                "NLP Error: Multi-word triggers CANNOT have their internal word order reversed.");
+
+        // 3. Baseline Test: A valid multi-word trigger wrapped in decorative words.
+        String successResponse = nlpTestServer.handleCommand("simon: please drink up the potion now").toLowerCase();
+        assertTrue(successResponse.contains("successfully"),
+                "Baseline Error: A valid multi-word trigger should work even with leading/trailing decorative words.");
     }
 
     @Test

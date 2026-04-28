@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+    <action>
+        <triggers>
+            <keyphrase>drink up</keyphrase>
+        </triggers>
+        <subjects>
+            <entity>potion</entity>
+        </subjects>
+        <consumed></consumed>
+        <produced></produced>
+        <narration>You drank up the potion successfully.</narration>
+    </action>
+</actions>
