@@ -505,6 +505,31 @@ class ExampleSTAGTests {
         assertFalse(invResponse.contains("potion"), "The potion is consumed.");
     }
 
+    @Test
+    void testCustomActionExtraneousEntities() {
+        // [Task 9 Validation] Extraneous Entities in Custom Actions
+        // An action MUST fail if the user includes entities that are NOT specified in the XML.
+
+        // 1. Setup: Get a valid item (key) and a totally unrelated item (potion)
+        sendCommandToServer("simon: get potion");
+        sendCommandToServer("simon: goto forest");
+        sendCommandToServer("simon: get key");
+        sendCommandToServer("simon: goto cabin");
+
+        // 2. Destructive Test: Try to perform a valid action but inject an extraneous entity ("potion")
+        // The action expects 'trapdoor' and 'key', but we force 'potion' into the sentence.
+        String response = sendCommandToServer("simon: unlock the trapdoor with the key and the potion").toLowerCase();
+
+        // 3. Assert it gets rejected
+        assertTrue(response.contains("error") || response.contains("cannot"),
+                "Extraneous Entity Error: The action should be rejected because 'potion' is an extraneous entity not specified in this XML action.");
+
+        // 4. Verify game state hasn't changed (the cellar path hasn't been produced)
+        String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertFalse(lookResponse.contains("cellar"),
+                "Game State Error: The trapdoor should not be unlocked due to the extraneous entity rule.");
+    }
+
 
 
 
