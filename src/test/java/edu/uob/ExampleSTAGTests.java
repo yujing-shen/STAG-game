@@ -425,6 +425,22 @@ class ExampleSTAGTests {
         assertFalse(lookResponse.contains("storeroom"), "Player should not be inside the storeroom.");
     }
 
+    @Test
+    void testMultiplayerInventoryIsolation() {
+        // player 1 Owen gets the axe
+        sendCommandToServer("owen: get the axe");
+
+        // player 2 Simon tries to chop the tree
+        // even though Simon is in the cabin, the action requires the axe.
+        // The axe is NOT in the room, and NOT in Simon's inventory.
+        String simonResponse = sendCommandToServer("simon: chop tree with axe").toLowerCase();
+        assertTrue(simonResponse.contains("error") || simonResponse.contains("cannot do that"),"Multiplayer Error: Simon should not be able to use an item in Owen's inv.");
+        String simonLookResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertFalse(simonLookResponse.contains("axe"),"The axe is picked up by the other player.");
+    }
+
+
+
 
 
 }
