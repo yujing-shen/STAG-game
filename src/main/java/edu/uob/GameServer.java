@@ -497,6 +497,10 @@ public final class GameServer {
                 Character character = currentLocation.removeCharacter(entityName);
                 storeroom.addCharacter(character);
             }
+            else if (gameMap.containsKey(entityName)) {
+                // location is destroyed
+                currentLocation.removePath(entityName);
+            }
             else if (entityName.equals("health")) {
                 player.decreaseHealth();
             }
