@@ -439,6 +439,30 @@ class ExampleSTAGTests {
         assertFalse(simonLookResponse.contains("axe"),"The axe is picked up by the other player.");
     }
 
+    @Test
+    void testLocationAsProducedAndConsumedEntities() {
+        // test locations as Produced/Consumed entities.
+        // 1. verify that the path to 'cellar' does NOT exist initially
+        String gotoResponse01 = sendCommandToServer("simon: goto cellar").toLowerCase();
+        assertTrue(gotoResponse01.contains("error") || gotoResponse01.contains("cannot"), "Path Error: The path to cellar should not exist before the required action.");
+
+        // setup
+        sendCommandToServer("simon: goto forest");
+        sendCommandToServer("simon: get key");
+        sendCommandToServer("simon: goto cabin");
+
+        // 2. Trigger the action that produces the 'cellar' location
+        sendCommandToServer("simon: open trapdoor");
+
+        // 3. Verify the path is successfully produced and appended to the current location
+        String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertTrue(lookResponse.contains("cellar"), "Action Error: The path to 'cellar' should be generated and visible after opening the trapdoor.");
+
+        // 4. Verify physical travel is now possible via the newly produced path
+        String gotoResponse02 = sendCommandToServer("simon: goto cellar").toLowerCase();
+        assertTrue(gotoResponse02.contains("cellar"), "Path Error: Player should be able to travel through the newly produced path to the cellar.");
+    }
+
 
 
 
