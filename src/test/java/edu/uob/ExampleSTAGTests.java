@@ -463,6 +463,33 @@ class ExampleSTAGTests {
         assertTrue(gotoResponse02.contains("cellar"), "Path Error: Player should be able to travel through the newly produced path to the cellar.");
     }
 
+    @Test
+    void testXMLActionParsingAndNarration() {
+        // Task 7： Verify that actions from the XML file are correctly parsed,
+        // loaded into memory, and that the EXACT narration is returned upon success.
+
+        // 1. Set up the state to perform a known action from extended-actions.xml
+        sendCommandToServer("simon: goto forest");
+        sendCommandToServer("simon: get key");
+        sendCommandToServer("simon: goto cabin");
+
+        // 2. Perform the action
+        String actionResponse = sendCommandToServer("simon: unlock trapdoor with key").toLowerCase();
+
+        // 3. Assert that the specific narration from the XML is returned
+        assertTrue(actionResponse.contains("you unlock the door and see steps leading down into a cellar"),
+                "XML Parsing Error: The server did not return the correct narration string parsed from the XML file.");
+
+        sendCommandToServer("simon: get potion");
+        String drinkResponse = sendCommandToServer("simon: drink potion").toLowerCase();
+
+        // Assert it doesn't return an error, proving the alternative trigger was parsed successfully
+        assertFalse(drinkResponse.contains("error") || drinkResponse.contains("cannot"),
+                "XML Parsing Error: Alternative triggers for the same action were not parsed correctly.");
+        String invResponse = sendCommandToServer("simon: inv").toLowerCase();
+        assertFalse(invResponse.contains("potion"), "The potion is consumed.");
+    }
+
 
 
 
