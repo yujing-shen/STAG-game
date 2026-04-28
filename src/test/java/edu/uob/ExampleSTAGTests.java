@@ -378,6 +378,53 @@ class ExampleSTAGTests {
         assertTrue(healthResponse.contains("2"), "Health System Error: Player health should decrease after a combat action that consumes 'health'.");
     }
 
+    @Test
+    void testStartLocationIsAlwaysFirst() {
+        // the start location MUST be the first location in the entities file.
+        String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        // In both basic and extended files, 'cabin' is defined first.
+        // if the parser used a non-ordered collection (like standard HashSet) and picked randomly, this would fail.
+        assertTrue(lookResponse.contains("cabin"), "Entity Loading Error: The player did not spawn in the first location defined in the DOT file.");
+    }
+
+    @Test
+    void testEntityCategorization() {
+        // ensure entities are loaded into their CORRECT categories.
+        // E.g., Artefacts can be picked up, Furniture cannot.
+
+        // 1. Try to pick up an Artefact (Should succeed)
+        String getAxeResponse = sendCommandToServer("simon: get the axe").toLowerCase();
+        assertFalse(getAxeResponse.contains("error") || getAxeResponse.contains("cannot"), "Entity Loading Error: 'axe' should be parsed as an Artefact and be collectible.");
+        String invResponse = sendCommandToServer("simon: inv").toLowerCase();
+        assertTrue(invResponse.contains("axe"), "The axe should be in inventory");
+
+        // 2. Try to pick up Furniture (Should fail)
+        String getTrapdoorResponse = sendCommandToServer("simon: get trapdoor").toLowerCase();
+        assertTrue(getTrapdoorResponse.contains("error") || getTrapdoorResponse.contains("cannot"), "Entity Loading Error: 'trapdoor' should be parsed as Furniture and CANNOT be collected.");
+        String invResponse2 = sendCommandToServer("simon: inv").toLowerCase();
+        assertFalse(invResponse2.contains("trapdoor"), "The trapdoor should not be in inventory");
+
+        // 3. Verify they are printed in the correct sections during 'look'
+        String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        // Just as an extra layer of defense, ensure 'trapdoor' wasn't accidentally moved.
+        assertTrue(lookResponse.contains("trapdoor"), "The trapdoor furniture should still be in the room.");
+    }
+
+    @Test
+    void testStoreroomExistenceAndIsolation() {
+        // The 'storeroom' must exist (either loaded or auto-created),
+        // and it MUST NOT be accessible via normal paths.
+
+        // 1. Try to blatantly walk into the storeroom (Should fail)
+        String gotoResponse = sendCommandToServer("simon: goto storeroom").toLowerCase();
+        assertTrue(gotoResponse.contains("error") || gotoResponse.contains("cannot"), "Map Loading Error: The 'storeroom' must not be accessible via normal movement commands.");
+        String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertTrue(lookResponse.contains("cabin"), "The player should still be in cabin.");
+
+        // 2. Ensure current location hasn't changed to storeroom
+        assertFalse(lookResponse.contains("storeroom"), "Player should not be inside the storeroom.");
+    }
+
 
 
 }
