@@ -439,8 +439,9 @@ public final class GameServer {
             boolean inRoomFurniture = currentLocation.getAllFurniture().containsKey(subject);
             boolean inRoomCharacters = currentLocation.getAllCharacters().containsKey(subject);
 
+            boolean isCurrentLocation = currentLocation.getName().equals(subject);
             // If a required subject is nowhere to be found, verification fails immediately
-            if (!inInv && !inRoomArtefacts && !inRoomFurniture && !inRoomCharacters) {
+            if (!inInv && !inRoomArtefacts && !inRoomFurniture && !inRoomCharacters && !isCurrentLocation) {
                 return false;
             }
         }
