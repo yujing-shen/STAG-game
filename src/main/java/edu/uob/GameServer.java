@@ -42,6 +42,7 @@ public final class GameServer {
     private HashSet<GameAction> gameActions = new HashSet<>();
     private Location startingLocation = null;
     private HashSet<String> allGameEntities = new HashSet<>();
+    private CommandParser commandParser = new CommandParser();
 
     public static void main(String[] args) throws IOException {
         File entitiesFile = Paths.get("config" + File.separator + "extended-entities.dot").toAbsolutePath().toFile();
@@ -101,7 +102,7 @@ public final class GameServer {
             // clean the parts of command
             String playerName = partsOfCommand[0].trim().toLowerCase();
             if (!playerName.matches("^[a-z '\\-]+$")) return "Error: Invalid player name";
-            String actionCommand = cleanCommand(partsOfCommand[1]);
+            String actionCommand = commandParser.cleanCommand(partsOfCommand[1]);
             if (actionCommand.isEmpty()) return "Error: No action specified";
 
             // ONLY perform one action at a time
@@ -174,7 +175,7 @@ public final class GameServer {
      */
     private String handleGet(Player player, String actionCommand) {
         // 1. scan how many entities are mentioned in the command
-        ArrayList<String> mentionedEntities = getMentionedEntities(actionCommand);
+        ArrayList<String> mentionedEntities = commandParser.getMentionedEntities(actionCommand, allGameEntities);
 
         // 2. check if the user mentioned nothing
         if (mentionedEntities.isEmpty()) {
@@ -252,7 +253,7 @@ public final class GameServer {
      */
     private String handleDrop(Player player, String actionCommand) {
         // 1. scan how many global entities are mentioned in the command
-        ArrayList<String> mentionedEntities = getMentionedEntities(actionCommand);
+        ArrayList<String> mentionedEntities = commandParser.getMentionedEntities(actionCommand, allGameEntities);
 
         // 2. check if the user mentioned nothing
         if (mentionedEntities.isEmpty()) {
@@ -354,22 +355,7 @@ public final class GameServer {
 
     }
 
-    /**
-     * clean the command
-     * strip all the punctuations
-     * @param rawCommand
-     * @return
-     */
-    private String cleanCommand(String rawCommand) {
-        // 1. convert command to lower case
-        String cleanStr = rawCommand.toLowerCase();
-        // 2. strip all of punctuations
-        cleanStr = cleanStr.replace("\\p{Punct}", " ");
-        // 3. combine multiple and consecutive space to one space
-        cleanStr = cleanStr.replaceAll("\\s+", " ").trim();
 
-        return cleanStr;
-    }
 
     /**
      * Main engine for handling all custom XML actions.
@@ -381,16 +367,16 @@ public final class GameServer {
      */
     private String handleCustomAction(Player currentPlayer, String actionCommand) {
         // 1. scan for all game entities mentioned in the command
-        ArrayList<String> mentionedEntities = getMentionedEntities(actionCommand);
+        ArrayList<String> mentionedEntities = commandParser.getMentionedEntities(actionCommand, allGameEntities);
 
         // prepare for ambiguous commands defense: create a list for valid candidate ations
          ArrayList<GameAction> validActions = new ArrayList<>();
 
         for (GameAction gameAction : gameActions) {
             // 2. trigger word check: does the command contain a valid trigger for this action?
-            if (isActionTriggered(gameAction, actionCommand)) {
+            if (commandParser.isActionTriggered(gameAction, actionCommand)) {
                 // 3. partial command rule: at least 1 subject must be explicitly mentioned
-                if (countMentionedSubjects(gameAction, actionCommand) >= 1) {
+                if (commandParser.countMentionedSubjects(gameAction, actionCommand) >= 1) {
 
                     // 4. extraneous entities defense line
                     boolean hasExtraneous = false;
@@ -440,17 +426,7 @@ public final class GameServer {
         }
     }
 
-    /**
-     * Helper 1: Trigger Radar
-     */
-    private boolean isActionTriggered(GameAction gameAction, String actionCommand) {
-        for (String trigger : gameAction.getTriggers()) {
-            if (actionCommand.contains(trigger)) {
-                return true;
-            }
-        }
-        return false;
-    }
+
     /**
      * Helper 2: Subject Verification
      */
@@ -548,21 +524,10 @@ public final class GameServer {
 
     }
 
-    /**
-     * Helper 4: Mentioned Subjects Counter
-     * Checks how many subjects required by the action are actually explicitly typed in the command.
-     */
-    private int countMentionedSubjects(GameAction gameAction, String actionCommand) {
-        int count = 0;
-        for (String subject : gameAction.getSubjects()) {
-            if (actionCommand.contains(subject)) {
-                count++;
-            }
-        }
-        return count;
-    }
 
     private boolean hasMultipleCommands(String actionCommand) {
+        if (actionCommand.contains("and")) return true;
+
         int actionCount = 0;
 
         // 1. scan the basic command
@@ -572,35 +537,28 @@ public final class GameServer {
         if (actionCommand.contains("drop")) actionCount++;
         if (actionCommand.contains("goto")) actionCount++;
 
-        // 2. scan the customer action
+        // 2. scan the custom action
+        boolean foundCustomAction = false;
         for (GameAction gameAction : gameActions) {
             for (String trigger : gameAction.getTriggers()) {
                 if (actionCommand.contains(trigger)) {
-                    actionCount++;
+                    // find any custom trigger, the foundCustomAction is true
+                    foundCustomAction = true;
                     break;
                 }
             }
+        }
+        // Normalize matched actions by name:
+        // multiple matches with the same name are counted as one logical action
+        // to avoid ambiguity being treated as multiple actions.
+        if (foundCustomAction) {
+            actionCount++;
         }
 
         // 3. if actionCount > 1 that is illegal
         return actionCount > 1;
     }
 
-    /**
-     *  scan the command and return all the entities
-     * @param actionCommand
-     * @return
-     */
-    private ArrayList<String> getMentionedEntities (String actionCommand) {
-        ArrayList<String> mentionedEntities = new ArrayList<>();
-
-        for (String entityName : allGameEntities) {
-            if (actionCommand.contains(entityName)) {
-                mentionedEntities.add(entityName);
-            }
-        }
-        return mentionedEntities;
-    }
 
     /**
     * Do not change the following method signature or we won't be able to mark your submission
