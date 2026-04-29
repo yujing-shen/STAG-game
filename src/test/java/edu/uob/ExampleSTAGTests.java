@@ -563,6 +563,77 @@ class ExampleSTAGTests {
                 "NLP Resolution: The server should successfully perform the action once the ambiguity is resolved.");
     }
 
+    @Test
+    void testMultiplayerLookVisibility() {
+        // Task 9：Multiple Players - Visibility
+        // Players must be able to see each other in the same room, but not see themselves.
+
+        // 1. Owen and Simon both join the game (they spawn in the cabin)
+        sendCommandToServer("owen: look");
+        sendCommandToServer("simon: look");
+
+        // 2. Owen looks around the cabin
+        String owenLookResponse = sendCommandToServer("owen: look").toLowerCase();
+
+        // Assertion 1: Owen MUST see Simon
+        assertTrue(owenLookResponse.contains("simon"), "Multiplayer Error: Owen should be able to see Simon in the cabin.");
+        // Assertion 2: Owen MUST NOT see himself
+        assertFalse(owenLookResponse.contains("owen"), "Multiplayer Error: Owen should not see his own name when looking around.");
+
+        // 3. Simon leaves the cabin and goes to the forest
+        sendCommandToServer("simon: goto forest");
+
+        // 4. Owen looks around the cabin again
+        String owenLookAgainResponse = sendCommandToServer("owen: look").toLowerCase();
+
+        // Assertion 3: Simon should be gone from Owen's sight
+        assertFalse(owenLookAgainResponse.contains("simon"), "Multiplayer Error: Owen should no longer see Simon because Simon went to the forest.");
+
+        // 5. Simon looks around the forest
+        String simonLookResponse = sendCommandToServer("simon: look").toLowerCase();
+
+        // Assertion 4: Simon should not see Owen in the forest
+        assertFalse(simonLookResponse.contains("owen"), "Multiplayer Error: Simon should not see Owen in the forest.");
+    }
+
+    @Test
+    void testDeathAndRespawn() {
+        // Task 10 : Player Death, Item Drop, and Respawn mechanics
+        File testEntities = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
+        File testActions = Paths.get("config" + File.separator + "test-death-actions.xml").toAbsolutePath().toFile();
+        GameServer deathServer = new GameServer(testEntities, testActions);
+
+        // 1. Setup: Player gets an item so we can verify they drop it upon death
+        deathServer.handleCommand("simon: get potion");
+        String invResponse = deathServer.handleCommand("simon: inv").toLowerCase();
+        assertTrue(invResponse.contains("potion"), "Player should have the potion before dying.");
+
+        // 2. Player drinks poison from the potion 3 times to die
+        deathServer.handleCommand("simon: drink poison from potion"); // Health -> 2
+        deathServer.handleCommand("simon: drink poison from potion"); // Health -> 1
+        String deathResponse = deathServer.handleCommand("simon: drink poison from potion").toLowerCase(); // Health -> 0 (Death!)
+
+        // 3. Assert 1: The correct death message is returned
+        assertTrue(deathResponse.contains("died") && deathResponse.contains("return to the start"),
+                "Death Error: The server should return the specific death narration.");
+
+        // 4. Assert 2: Respawn at start location (cabin)
+        String lookResponse = deathServer.handleCommand("simon: look").toLowerCase();
+        assertTrue(lookResponse.contains("cabin"), "Respawn Error: Player must be teleported back to the start location.");
+
+        // 5. Assert 3: Inventory is emptied
+        String invAfterDeath = deathServer.handleCommand("simon: inv").toLowerCase();
+        assertFalse(invAfterDeath.contains("potion"), "Inventory Error: Player must lose all items upon death.");
+
+        // 6. Assert 4: Health is fully restored to 3
+        String healthResponse = deathServer.handleCommand("simon: health").toLowerCase();
+        assertTrue(healthResponse.contains("3"), "Health Error: Player health must be restored to maximum (3) after respawning.");
+
+        // 7. Assert 5: The dropped item is now in the room where they died!
+        // (Since they died in the cabin, the potion should be on the cabin floor)
+        assertTrue(lookResponse.contains("potion"), "Drop Error: The player's items must be dropped in the location where they died.");
+    }
+
 
 
 
