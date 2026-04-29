@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import javax.xml.xpath.XPath;
 import java.io.File;
 import java.nio.file.Paths;
 import java.io.IOException;
@@ -528,6 +530,37 @@ class ExampleSTAGTests {
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
         assertFalse(lookResponse.contains("cellar"),
                 "Game State Error: The trapdoor should not be unlocked due to the extraneous entity rule.");
+    }
+
+    @Test
+    void testAmbiguousCommandRejection() {
+        // task 9 Ambiguous Command
+        // We bypass the finicky DOT parser by using the provided basic-entities.dot
+
+        // 1. set up (USING THE SAFE BASIC ENTITIES FILE!)
+        File testEntities = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
+        File testActions = Paths.get("config" + File.separator + "test-ambiguous-actions.xml").toAbsolutePath().toFile();
+
+        GameServer ambiguousServer = new GameServer(testEntities, testActions);
+
+        // 2. The player types an ambiguous command
+        // The player mentions 'axe' (passes the >=1 subject rule).
+        // But BOTH "cut potion" and "cut trapdoor" are fully performable because all 3 items are in the cabin!
+        // The server's validActions list will have a size of 2.
+        String ambiguousResponse = ambiguousServer.handleCommand("simon: cut with axe").toLowerCase();
+
+        // assert that your specific ambiguity error message is returned
+        assertTrue(ambiguousResponse.contains("ambiguous") || ambiguousResponse.contains("more than one"),
+                "NLP Error: The server must reject commands that match multiple performable actions.");
+
+        // 3. Success Test: The player specifies BOTH subjects to break the ambiguity
+        // By adding "potion", the Extraneous Entity rule will eliminate the trapdoor action!
+        // The validActions list size drops to exactly 1.
+        String clearResponse = ambiguousServer.handleCommand("simon: cut the potion with the axe").toLowerCase();
+
+        // Assert that the action is now successfully performed
+        assertTrue(clearResponse.contains("cut the potion"),
+                "NLP Resolution: The server should successfully perform the action once the ambiguity is resolved.");
     }
 
 

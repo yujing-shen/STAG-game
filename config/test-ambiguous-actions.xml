@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+    <action>
+        <triggers><keyphrase>cut</keyphrase></triggers>
+        <subjects><entity>axe</entity><entity>potion</entity></subjects>
+        <consumed></consumed><produced></produced>
+        <narration>You cut the potion with the axe.</narration>
+    </action>
+    <action>
+        <triggers><keyphrase>cut</keyphrase></triggers>
+        <subjects><entity>axe</entity><entity>trapdoor</entity></subjects>
+        <consumed></consumed><produced></produced>
+        <narration>You cut the trapdoor with the axe.</narration>
+    </action>
+</actions>
