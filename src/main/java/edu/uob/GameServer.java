@@ -452,76 +452,9 @@ public final class GameServer {
      * Helper 3: Mass and Energy Transfer (Executing Effects)
      */
     private boolean executeEffects(Player player, GameAction action) {
-        Location currentLocation = player.getCurrentLocation();
-        Location storeroom = gameMap.get("storeroom");
-
-        // --- Execute Consumption ---
-        for (String entityName : action.getConsumed()) {
-            if (currentLocation.getAllArtefacts().containsKey(entityName)) {
-                Artefact artefact = currentLocation.removeArtefact(entityName);
-                storeroom.addArtefact(artefact);
-            }
-            else if (player.getInventory().containsKey(entityName)) {
-                Artefact artefact = player.removeArtefact(entityName);
-                storeroom.addArtefact(artefact);
-            }
-            else if (currentLocation.getAllFurniture().containsKey(entityName)) {
-                Furniture furniture = currentLocation.removeFurniture(entityName);
-                storeroom.addFurniture(furniture);
-            }
-            else if (currentLocation.getAllCharacters().containsKey(entityName)) {
-                Character character = currentLocation.removeCharacter(entityName);
-                storeroom.addCharacter(character);
-            }
-            else if (gameMap.containsKey(entityName)) {
-                // location is destroyed
-                currentLocation.removePath(entityName);
-            }
-            else if (entityName.equals("health")) {
-                player.decreaseHealth();
-            }
-
-        }
-
-        // --- Execute Production ---
-        for (String entityName : action.getProduced()) {
-            if (storeroom.getAllArtefacts().containsKey(entityName)) {
-                Artefact artefact = storeroom.removeArtefact(entityName);
-                currentLocation.addArtefact(artefact);
-            }
-            else if (storeroom.getAllFurniture().containsKey(entityName)) {
-                Furniture furniture = storeroom.removeFurniture(entityName);
-                currentLocation.addFurniture(furniture);
-            }
-            else if (gameMap.containsKey(entityName)) {
-                // IMPORTANT: If the produced entity is a Location (e.g. "cellar"),
-                // it means opening a new path from the current room!
-                Location newPath = gameMap.get(entityName);
-                currentLocation.addPath(newPath);
-            }
-            else if (entityName.equals("health")) {
-                player.increaseHealth();
-            }
-        }
-
-        // if health is 0, drop all the items of inv to currentLocation
-
-        if (player.getHealth() == 0) {
-            HashMap<String,Artefact> inv = player.getInventory();
-
-            ArrayList<Artefact> itemsToDrop = new ArrayList<>(inv.values());
-            for (Artefact artefact : itemsToDrop) {
-                player.removeArtefact(artefact.getName());
-                currentLocation.addArtefact(artefact);
-            }
-            // AND send the player to starting location
-            player.setCurrentLocation(startingLocation);
-            player.setHealth(MAX_HEALTH);
-            return true; // player is dead
-        }
-        return false; // player is not dead
-
-
+        processConsumedEntities(player, action);
+        processProducedEntities(player, action);
+        return checkAndHandlePlayerDeath(player);
     }
 
 
@@ -557,6 +490,79 @@ public final class GameServer {
 
         // 3. if actionCount > 1 that is illegal
         return actionCount > 1;
+    }
+
+    /**
+     * process the consumed entities
+     * @param player
+     * @param action
+     */
+    private void processConsumedEntities(Player player, GameAction action) {
+        Location currentLocation = player.getCurrentLocation();
+        Location storeroom = gameMap.get("storeroom");
+
+        for (String entityName : action.getConsumed()) {
+            if (currentLocation.getAllArtefacts().containsKey(entityName)) {
+                storeroom.addArtefact(currentLocation.removeArtefact(entityName));
+            } else if (player.getInventory().containsKey(entityName)) {
+                storeroom.addArtefact(player.removeArtefact(entityName));
+            } else if (currentLocation.getAllFurniture().containsKey(entityName)) {
+                storeroom.addFurniture(currentLocation.removeFurniture(entityName));
+            } else if (currentLocation.getAllCharacters().containsKey(entityName)) {
+                storeroom.addCharacter(currentLocation.removeCharacter(entityName));
+            } else if (gameMap.containsKey(entityName)) {
+                currentLocation.removePath(entityName);
+            } else if (entityName.equals("health")) {
+                player.decreaseHealth();
+            }
+        }
+    }
+
+    /**
+     * process the produced entities
+     * @param player
+     * @param action
+     */
+    private void processProducedEntities(Player player, GameAction action) {
+        Location currentLocation = player.getCurrentLocation();
+        Location storeroom = gameMap.get("storeroom");
+
+        for (String entityName : action.getProduced()) {
+            if (storeroom.getAllArtefacts().containsKey(entityName)) {
+                currentLocation.addArtefact(storeroom.removeArtefact(entityName));
+            } else if (storeroom.getAllFurniture().containsKey(entityName)) {
+                currentLocation.addFurniture(storeroom.removeFurniture(entityName));
+            } else if (gameMap.containsKey(entityName)) {
+                currentLocation.addPath(gameMap.get(entityName));
+            } else if (entityName.equals("health")) {
+                player.increaseHealth();
+            }
+        }
+    }
+
+    /**
+     * check and handle player's death
+     * @param player
+     * @return
+     */
+    private boolean checkAndHandlePlayerDeath(Player player) {
+        if (player.getHealth() == 0) {
+            Location currentLocation = player.getCurrentLocation();
+            HashMap<String, Artefact> inv = player.getInventory();
+
+            // all the items to be dropped
+            ArrayList<Artefact> itemsToDrop = new ArrayList<>(inv.values());
+            for (Artefact artefact : itemsToDrop) {
+                player.removeArtefact(artefact.getName());
+                currentLocation.addArtefact(artefact);
+            }
+
+            //
+            player.setCurrentLocation(startingLocation);
+            player.setHealth(MAX_HEALTH);
+            return true; // the player is dead
+        }
+        return false; // the player is alive
     }
 
 
