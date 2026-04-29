@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+    <action>
+        <triggers><keyphrase>drink poison</keyphrase></triggers>
+        <subjects><entity>potion</entity></subjects>
+        <consumed><entity>health</entity></consumed>
+        <produced></produced>
+        <narration>You drink the poison and feel terrible.</narration>
+    </action>
+</actions>
