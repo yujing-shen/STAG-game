@@ -77,16 +77,17 @@ class ExampleSTAGTests {
 
   // Test that we can pick something up and that it appears in our inventory
   @Test
-  void testGet()
-  {
-      String response;
+  void testGet() {
+      // 1. Action: Attempt to get an existing artefact
       sendCommandToServer("simon: get potion");
-      response = sendCommandToServer("simon: inv");
-      response = response.toLowerCase();
-      assertTrue(response.contains("potion"), "Did not see the potion in the inventory after an attempt was made to get it");
-      response = sendCommandToServer("simon: look");
-      response = response.toLowerCase();
-      assertFalse(response.contains("potion"), "Potion is still present in the room after an attempt was made to get it");
+
+      // 2. Assert Inventory: The artefact should appear in the player's inventory
+      String invResponse = sendCommandToServer("simon: inv").toLowerCase();
+      assertTrue(invResponse.contains("potion"), "Did not see the potion in the inventory after an attempt was made to get it");
+
+      // 3. Assert Location: The artefact should be removed from the room
+      String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+      assertFalse(lookResponse.contains("potion"), "Potion is still present in the room after an attempt was made to get it");
   }
 
   // Test that we can goto a different location (we won't get very far if we can't move around the game !)
@@ -235,7 +236,7 @@ class ExampleSTAGTests {
         sendCommandToServer("simon: get the potion");
         sendCommandToServer("simon: get the axe");
         // Greedy drop
-        // 1. try to dorp axe and potion
+        // 1. try to drop axe and potion
         String dropResponse = sendCommandToServer("simon: quickly drop the axe and potion now").toLowerCase();
         assertTrue(dropResponse.contains("error") || dropResponse.contains("cannot"), "Game should reject composite drop commands.");
 
@@ -259,7 +260,7 @@ class ExampleSTAGTests {
         String invResponse = sendCommandToServer("simon: inv").toLowerCase();
         assertFalse(invResponse.contains("trapdoor"), "Player should not be able to pick up furniture");
 
-        // 2. try to drop UNEXISTING artefact of the inv
+        // 2. try to drop NON-EXISTENT artefact of the inv
         String dropResponse = sendCommandToServer("simon: drop gold").toLowerCase();
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
         assertFalse(lookResponse.contains("gold"), "Dropping an item you do not have should not create it in the room.");
@@ -321,7 +322,7 @@ class ExampleSTAGTests {
 
     @Test
     // Test the player chop a tree with axe
-    void testCustomerActionChopTreeWithAxe() {
+    void testCustomActionChopTreeWithAxe() {
         sendCommandToServer("simon: please get the axe now");
         sendCommandToServer("simon: goto forest");
         sendCommandToServer("simon: please loudly chop the huge tree now");
@@ -337,7 +338,7 @@ class ExampleSTAGTests {
 
     @Test
     // Test the player chop the tree WITHOUT axe (Test point: the INV does not have axe, not the command)
-    void testCustomerActionChopTreeWithoutAxe() {
+    void testCustomActionChopTreeWithoutAxe() {
       sendCommandToServer("simon: please goto forest now.");
       String response = sendCommandToServer("simon: chop tree").toLowerCase();
       assertTrue(response.contains("cannot do that"), "You cannot do that without axe.");
@@ -348,7 +349,7 @@ class ExampleSTAGTests {
 
     @Test
     // Test the player chop the tree NOT in forest
-    void testCustomerActionChopTreeNotInForest() {
+    void testCustomActionChopTreeNotInForest() {
         sendCommandToServer("simon: get the axe");
         String response = sendCommandToServer("simon: chop tree").toLowerCase();
         assertTrue(response.contains("cannot do that"), "You cannot do that since there is no tree in cabin.");
