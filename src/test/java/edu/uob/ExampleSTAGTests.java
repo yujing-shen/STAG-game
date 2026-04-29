@@ -635,6 +635,32 @@ class ExampleSTAGTests {
         assertTrue(lookResponse.contains("potion"), "Drop Error: The player's items must be dropped in the location where they died.");
     }
 
+    @Test
+    void testLocationAsSubject() {
+        // Edge Case Validation Context Sensitive Actions (Location as Subject)
+        // Verifies that the player's CURRENT location is accepted as a valid subject.
+        File testEntities = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
+        File testActions = Paths.get("config" + File.separator + "test-location-subject-actions.xml").toAbsolutePath().toFile();
+        GameServer locationServer = new GameServer(testEntities, testActions);
+
+        // 1. Success Test: Player is in the cabin (starting location). Action requires 'cabin'.
+        String successResponse = locationServer.handleCommand("simon: sleep in the cabin").toLowerCase();
+
+        // Assert the action is successfully performed because 'cabin' is the current location
+        assertTrue(successResponse.contains("comfortably"),
+                "Location Subject Error: The server must accept the current room's name as a valid subject.");
+
+        // 2. Move the player out of the cabin
+        locationServer.handleCommand("simon: goto forest");
+
+        // 3. Failure Test: Player tries to sleep in the cabin while physically in the forest.
+        String failResponse = locationServer.handleCommand("simon: sleep in the cabin").toLowerCase();
+
+        // Assert the action is rejected because the player is no longer in the cabin
+        assertTrue(failResponse.contains("cannot do that") || failResponse.contains("error"),
+                "Location Subject Error: The action should fail if the required location subject is NOT the current location.");
+    }
+
 
 
 

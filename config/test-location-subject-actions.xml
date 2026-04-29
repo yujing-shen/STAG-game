@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+    <action>
+        <triggers><keyphrase>sleep</keyphrase></triggers>
+        <subjects><entity>cabin</entity></subjects>
+        <consumed></consumed>
+        <produced></produced>
+        <narration>You sleep comfortably in the cabin.</narration>
+    </action>
+</actions>
