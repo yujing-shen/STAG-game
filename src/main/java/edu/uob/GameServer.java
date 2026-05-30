@@ -63,7 +63,7 @@ public final class GameServer {
 
         // 1. Parse DOT file for entities and world map
         DOTParser dotParser = new DOTParser();
-        dotParser.parse(entitiesFile);
+        dotParser.parseEntitiesFile(entitiesFile);
 
         // Retrieve parsed map data
         this.gameMap = dotParser.getGameMap();
@@ -72,7 +72,7 @@ public final class GameServer {
 
         // 2. Parse XML file for custom actions
         XMLParser xmlParser = new XMLParser();
-        xmlParser.parse(actionsFile);
+        xmlParser.parseXMLGraph(actionsFile);
 
         // Retrieve parsed action data
         this.gameActions = xmlParser.getGameActions();
@@ -145,7 +145,7 @@ public final class GameServer {
 
 
     /**
-     * Lists all of the artefacts currently in the possession of the player
+     * Lists all artefacts currently in the possession of the player
      *
      * @param
      * @return
@@ -455,7 +455,7 @@ public final class GameServer {
     private boolean executeEffects(Player player, GameAction action) {
         processConsumedEntities(player, action);
         processProducedEntities(player, action);
-        return checkAndHandlePlayerDeath(player);
+        return handlePlayerDeath(player);
     }
 
 
@@ -546,7 +546,7 @@ public final class GameServer {
      * @param player
      * @return
      */
-    private boolean checkAndHandlePlayerDeath(Player player) {
+    private boolean handlePlayerDeath(Player player) {
         if (player.getHealth() == 0) {
             Location currentLocation = player.getCurrentLocation();
             HashMap<String, Artefact> inv = player.getInventory();

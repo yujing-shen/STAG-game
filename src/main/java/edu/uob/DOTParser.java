@@ -47,7 +47,7 @@ public class DOTParser {
      * Parses the provided DOT file to construct the game world.
      * @param entitiesFile The DOT file containing game map and entities.
      */
-    public void parse(File entitiesFile) {
+    public void parseEntitiesFile(File entitiesFile) {
         try {
             Parser parser = new Parser();
             FileReader fileReader = new FileReader(entitiesFile);

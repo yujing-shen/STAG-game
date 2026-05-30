@@ -31,7 +31,7 @@ public class XMLParser {
      * fulfilling the requirement to handle file loading gracefully.
      * * @param actionsFile The XML file containing custom game actions.
      */
-    public void parse(File actionsFile) {
+    public void parseXMLGraph(File actionsFile) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
