@@ -172,37 +172,19 @@ public final class GameServer {
      * @return A String describing the result of the action
      */
     private String handleGet(Player player, String actionCommand) {
-        // 1. scan how many entities are mentioned in the command
-        ArrayList<String> mentionedEntities = commandParser.getMentionedEntities(actionCommand, allGameEntities);
+        String targetEntityName = extractSingleTargetEntity(actionCommand);
 
-        // 2. check if the user mentioned nothing
-        if (mentionedEntities.isEmpty()) {
-            return "There is nothing like that here to pick up.";
-        }
+        if (targetEntityName.equals("ERROR_EMPTY")) return "There is nothing like that here to pick up.";
+        if (targetEntityName.equals("ERROR_MULTIPLE")) return "Error: Extraneous entities detected. You can only specify one item at a time.";
 
-        // 3. check extraneous entities & composite commands
-        // NOT allowed "get the potion and axe) AND "get key from forest"
-        else if (mentionedEntities.size() > 1) {
-            return "Error: Extraneous entities detected. You can only specify one item at a time.";
-        }
-
-        // 4. since the command is valid, extract the ONLY mentioned entity
-        String targetEntityName = mentionedEntities.get(0);
         Location currentLocation = player.getCurrentLocation();
         HashMap<String, Artefact> roomArtefacts = currentLocation.getAllArtefacts();
 
-        // 5. physical verification: is this entity actually an artefact on the floor?
         if (roomArtefacts.containsKey(targetEntityName)) {
-            Artefact targetArtefact = roomArtefacts.get(targetEntityName);
-
-            // execute the transfer
-            currentLocation.removeArtefact(targetEntityName);
-            player.addArtefact(targetArtefact);
-
+            player.addArtefact(roomArtefacts.remove(targetEntityName));
             return "You picked up a " + targetEntityName + ".";
-        } else {
-            return "Error: You cannot get that here.";
         }
+        return "Error: You cannot get that here.";
     }
 
     /**
@@ -247,37 +229,21 @@ public final class GameServer {
      * @return A String describing the result of the action
      */
     private String handleDrop(Player player, String actionCommand) {
-        // 1. scan how many global entities are mentioned in the command
-        ArrayList<String> mentionedEntities = commandParser.getMentionedEntities(actionCommand, allGameEntities);
+        String targetEntityName = extractSingleTargetEntity(actionCommand);
 
-        // 2. check if the user mentioned nothing
-        if (mentionedEntities.isEmpty()) {
-            return "You are not meant to drop anything";
+        if (targetEntityName.equals("ERROR_EMPTY")) return "You are not meant to drop anything";
+        if (targetEntityName.equals("ERROR_MULTIPLE")) {
+            return "ERROR: Extraneous entities detected. You can only specify one item at a time.";
         }
 
-        // 3. check extraneous entities & composite commands
-        // NOT allowed "drop potion and axe" AND " drop key from forest"
-        else if (mentionedEntities.size() > 1) {
-            return "Error: Extraneous entities detected. You can only specify one item at a time.";
-        }
-
-        // 4. since the command is valid, extract the ONLY mentioned entity
-        String targetEntityName = mentionedEntities.get(0);
         Location currentLocation = player.getCurrentLocation();
         HashMap<String, Artefact> inventory = player.getInventory();
 
-        // 5. physical verification : is this entity actually in the inventory?
         if (inventory.containsKey(targetEntityName)) {
-            Artefact targetArtefact = inventory.get(targetEntityName);
-
-            // execute the transfer
-            inventory.remove(targetEntityName);
-            currentLocation.addArtefact(targetArtefact);
-
+            currentLocation.addArtefact(inventory.remove(targetEntityName));
             return "You dropped a " + targetEntityName + ".";
-        } else {
-            return "Error: You cannot drop that here.";
         }
+        return "ERROR: You cannot drop that here.";
     }
 
     /**
@@ -547,6 +513,17 @@ public final class GameServer {
             return true; // the player is dead
         }
         return false; // the player is alive
+    }
+
+    /**
+     * Helper to enforce DRY principle for entity extraction and validation.
+     */
+    private String extractSingleTargetEntity(String actionCommand){
+        ArrayList<String> mentionedEntities = commandParser.getMentionedEntities(actionCommand, allGameEntities);
+        if (mentionedEntities.isEmpty()) return "ERROR_EMPTY";
+        if (mentionedEntities.size() > 1) return "ERROR_MULTIPLE";
+        return mentionedEntities.get(0);
+
     }
 
     /**
