@@ -26,13 +26,16 @@ public class Location extends GameEntity {
     public HashMap<String, Location> getAllPaths() {
         return paths;
     }
+
     // Path : get the location by the specific location name
     public Location getPathByName(String locationName) {
         return paths.get(locationName);
     }
+
     public void addPath(Location location) {
         paths.put(location.getName(), location);
     }
+
     public Location removePath(String locationName) {
        return paths.remove(locationName);
     }
@@ -41,12 +44,15 @@ public class Location extends GameEntity {
     public HashMap<String, Character> getAllCharacters() {
         return characters;
     }
+
     public Character getCharacterByName(String characterName) {
         return characters.get(characterName);
     }
+
     public void addCharacter(Character character) {
         characters.put(character.getName(), character);
     }
+
     public Character removeCharacter(String characterName) {
         return characters.remove(characterName);
     }
@@ -60,9 +66,11 @@ public class Location extends GameEntity {
     public Artefact getArtefactByName(String name) {
         return artefacts.get(name);
     }
+
     public void addArtefact(Artefact artefact) {
         artefacts.put(artefact.getName(), artefact);
     }
+
     // remove the artefact by the name and return it
     public Artefact removeArtefact(String name) {
         return artefacts.remove(name);
@@ -71,12 +79,15 @@ public class Location extends GameEntity {
     public HashMap<String, Furniture> getAllFurniture() {
         return furniture;
     }
+
     public Furniture getFurnitureByName(String furnitureName) {
         return furniture.get(furnitureName);
     }
+
     public void addFurniture(Furniture furniture) {
         this.furniture.put(furniture.getName(), furniture);
     }
+
     public Furniture removeFurniture(String furnitureName) {
        return furniture.remove(furnitureName);
     }

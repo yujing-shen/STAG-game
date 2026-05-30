@@ -36,7 +36,8 @@ class CustomActionsTests {
         // 1. Assert the produced
         assertTrue(lookResponse.contains("log"), "After chopping the tree, the player should see the log");
         // 2. Assert the consumed
-        assertFalse(lookResponse.contains("tree"), "After chopping the tree, the player should not see the tree since tree is in storeroom now.");
+        assertFalse(lookResponse.contains("tree"), "After chopping the tree, " +
+                "the player should not see the tree since tree is in storeroom now.");
         // 3. Assert the inv
         String invResponse = sendCommandToServer("simon: inv").toLowerCase();
         assertTrue(invResponse.contains("axe"), "The axe should be in inventory");
@@ -78,7 +79,8 @@ class CustomActionsTests {
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
         // In both basic and extended files, 'cabin' is defined first.
         // If the parser used a non-ordered collection (like standard HashSet) and picked randomly, this would fail.
-        assertTrue(lookResponse.contains("cabin"), "Entity Loading Error: The player did not spawn in the first location defined in the DOT file.");
+        assertTrue(lookResponse.contains("cabin"), "Entity Loading Error: " +
+                "The player did not spawn in the first location defined in the DOT file.");
     }
 
     @Test
@@ -88,13 +90,15 @@ class CustomActionsTests {
 
         // 1. Try to pick up an Artefact (Should succeed)
         String getAxeResponse = sendCommandToServer("simon: get the axe").toLowerCase();
-        assertFalse(getAxeResponse.contains("error") || getAxeResponse.contains("cannot"), "Entity Loading Error: 'axe' should be parsed as an Artefact and be collectible.");
+        assertFalse(getAxeResponse.contains("error") || getAxeResponse.contains("cannot"),
+                "Entity Loading Error: 'axe' should be parsed as an Artefact and be collectible.");
         String invResponse = sendCommandToServer("simon: inv").toLowerCase();
         assertTrue(invResponse.contains("axe"), "The axe should be in inventory");
 
         // 2. Try to pick up Furniture (Should fail)
         String getTrapdoorResponse = sendCommandToServer("simon: get trapdoor").toLowerCase();
-        assertTrue(getTrapdoorResponse.contains("error") || getTrapdoorResponse.contains("cannot"), "Entity Loading Error: 'trapdoor' should be parsed as Furniture and CANNOT be collected.");
+        assertTrue(getTrapdoorResponse.contains("error") || getTrapdoorResponse.contains("cannot"),
+                "Entity Loading Error: 'trapdoor' should be parsed as Furniture and CANNOT be collected.");
 
         // 3. Verify they are printed in the correct sections during 'look'
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
@@ -109,7 +113,8 @@ class CustomActionsTests {
 
         // 1. Try to blatantly walk into the storeroom (Should fail)
         String gotoResponse = sendCommandToServer("simon: goto storeroom").toLowerCase();
-        assertTrue(gotoResponse.contains("error") || gotoResponse.contains("cannot"), "Map Loading Error: The 'storeroom' must not be accessible via normal movement commands.");
+        assertTrue(gotoResponse.contains("error") || gotoResponse.contains("cannot"),
+                "Map Loading Error: The 'storeroom' must not be accessible via normal movement commands.");
 
         // 2. Ensure current location hasn't changed to storeroom
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
@@ -121,7 +126,8 @@ class CustomActionsTests {
         // Test locations as Produced/Consumed entities.
         // 1. Verify that the path to 'cellar' does NOT exist initially
         String gotoResponse01 = sendCommandToServer("simon: goto cellar").toLowerCase();
-        assertTrue(gotoResponse01.contains("error") || gotoResponse01.contains("cannot"), "Path Error: The path to cellar should not exist before the required action.");
+        assertTrue(gotoResponse01.contains("error") || gotoResponse01.contains("cannot"),
+                "Path Error: The path to cellar should not exist before the required action.");
 
         // Setup
         sendCommandToServer("simon: goto forest");
@@ -133,11 +139,13 @@ class CustomActionsTests {
 
         // 3. Verify the path is successfully produced and appended to the current location
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
-        assertTrue(lookResponse.contains("cellar"), "Action Error: The path to 'cellar' should be generated and visible after opening the trapdoor.");
+        assertTrue(lookResponse.contains("cellar"),
+                "Action Error: The path to 'cellar' should be generated and visible after opening the trapdoor.");
 
         // 4. Verify physical travel is now possible via the newly produced path
         String gotoResponse02 = sendCommandToServer("simon: goto cellar").toLowerCase();
-        assertTrue(gotoResponse02.contains("cellar"), "Path Error: Player should be able to travel through the newly produced path to the cellar.");
+        assertTrue(gotoResponse02.contains("cellar"),
+                "Path Error: Player should be able to travel through the newly produced path to the cellar.");
     }
 
     @Test
@@ -155,7 +163,8 @@ class CustomActionsTests {
 
         // 3. Assert that the specific narration from the XML is returned
         assertTrue(actionResponse.contains("you unlock the door and see steps leading down into a cellar"),
-                "XML Parsing Error: The server did not return the correct narration string parsed from the XML file.");
+                "XML Parsing Error: " +
+                        "The server did not return the correct narration string parsed from the XML file.");
 
         sendCommandToServer("simon: get potion");
         String drinkResponse = sendCommandToServer("simon: drink potion").toLowerCase();
@@ -170,7 +179,8 @@ class CustomActionsTests {
         // Edge Case Validation Context Sensitive Actions (Location as Subject)
         // Verifies that the player's CURRENT location is accepted as a valid subject.
         File testEntities = Paths.get("config" + File.separator + "basic-entities.dot").toAbsolutePath().toFile();
-        File testActions = Paths.get("config" + File.separator + "test-location-subject-actions.xml").toAbsolutePath().toFile();
+        File testActions = Paths.get("config" + File.separator +
+                "test-location-subject-actions.xml").toAbsolutePath().toFile();
         GameServer locationServer = new GameServer(testEntities, testActions);
 
         // 1. Success Test: Player is in the cabin (starting location). Action requires 'cabin'.
@@ -188,6 +198,7 @@ class CustomActionsTests {
 
         // Assert the action is rejected because the player is no longer in the cabin
         assertTrue(failResponse.contains("cannot do that") || failResponse.contains("error"),
-                "Location Subject Error: The action should fail if the required location subject is NOT the current location.");
+                "Location Subject Error: " +
+                        "The action should fail if the required location subject is NOT the current location.");
     }
 }

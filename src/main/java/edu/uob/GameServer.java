@@ -77,7 +77,6 @@ public final class GameServer {
         // Retrieve parsed action data
         this.gameActions = xmlParser.getGameActions();
 
-
     }
 
     /**
@@ -142,7 +141,6 @@ public final class GameServer {
             return "Error: Something went wrong executing your command: " + command;
         }
     }
-
 
     /**
      * Lists all artefacts currently in the possession of the player
@@ -210,9 +208,6 @@ public final class GameServer {
     /**
      * Moves the player to a new location
      * (only if there is a valid path to that location)
-     *
-     * @param
-     * @return
      */
     private String handleGoto(Player player, String actionCommand) {
         // 1. get the currentRoom the player is in
@@ -352,10 +347,7 @@ public final class GameServer {
 
         // System.out.println(result.toString());
         return result.toString();
-
     }
-
-
 
     /**
      * Main engine for handling all custom XML actions.
@@ -385,7 +377,6 @@ public final class GameServer {
                         if (!gameAction.getSubjects().contains(entityName) &&
                             !gameAction.getConsumed().contains(entityName) &&
                             !gameAction.getProduced().contains(entityName)) {
-
                             hasExtraneous = true;
                             break;
                         }
@@ -405,7 +396,6 @@ public final class GameServer {
             }
         }
 
-
         // 6. final verdict: handle "ambiguous commands"
         if (validActions.isEmpty()) {
             return "You cannot do that here, or you do not have the required items.";
@@ -417,7 +407,6 @@ public final class GameServer {
         } else {
             GameAction finalGameAction = validActions.get(0);
             boolean isDead = executeEffects(currentPlayer, finalGameAction);
-
             if (!isDead) {
                 return finalGameAction.getNarration();
             } else {
@@ -425,7 +414,6 @@ public final class GameServer {
             }
         }
     }
-
 
     /**
      * Helper 2: Subject Verification
@@ -438,7 +426,6 @@ public final class GameServer {
             boolean inRoomArtefacts = currentLocation.getAllArtefacts().containsKey(subject);
             boolean inRoomFurniture = currentLocation.getAllFurniture().containsKey(subject);
             boolean inRoomCharacters = currentLocation.getAllCharacters().containsKey(subject);
-
             boolean isCurrentLocation = currentLocation.getName().equals(subject);
             // If a required subject is nowhere to be found, verification fails immediately
             if (!inInv && !inRoomArtefacts && !inRoomFurniture && !inRoomCharacters && !isCurrentLocation) {
@@ -446,7 +433,6 @@ public final class GameServer {
             }
         }
         return true; // All subjects are present
-
     }
 
     /**
@@ -457,7 +443,6 @@ public final class GameServer {
         processProducedEntities(player, action);
         return handlePlayerDeath(player);
     }
-
 
     private boolean hasMultipleCommands(String actionCommand) {
         if (actionCommand.contains("and")) return true;
@@ -488,7 +473,6 @@ public final class GameServer {
         if (foundCustomAction) {
             actionCount++;
         }
-
         // 3. if actionCount > 1 that is illegal
         return actionCount > 1;
     }
@@ -558,14 +542,12 @@ public final class GameServer {
                 currentLocation.addArtefact(artefact);
             }
 
-            //
             player.setCurrentLocation(startingLocation);
             player.setHealth(MAX_HEALTH);
             return true; // the player is dead
         }
         return false; // the player is alive
     }
-
 
     /**
     * Do not change the following method signature or we won't be able to mark your submission

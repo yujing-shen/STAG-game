@@ -21,7 +21,8 @@ class BasicCommandsTests {
     }
 
     String sendCommandToServer(String command) {
-        // Try to send a command to the server - this call will timeout if it takes too long (in case the server enters an infinite loop)
+        // Try to send a command to the server
+        // - this call will timeout if it takes too long (in case the server enters an infinite loop)
         return assertTimeoutPreemptively(Duration.ofMillis(1000), () -> { return server.handleCommand(command);},
                 "Server took too long to respond (probably stuck in an infinite loop)");
     }
@@ -55,7 +56,8 @@ class BasicCommandsTests {
 
         // Assertion: The potion MUST be back in the starting room!
         // This proves the game state is loaded afresh and original config files were NOT modified.
-        assertTrue(lookResponse2.contains("potion"), "State leaked! Potion should be back in the room after server restart.");
+        assertTrue(lookResponse2.contains("potion"),
+                "State leaked! Potion should be back in the room after server restart.");
     }
 
     // A lot of tests will probably check the game state using 'look' - so we better make sure 'look' works well !
@@ -64,8 +66,10 @@ class BasicCommandsTests {
         String response = sendCommandToServer("simon: look").toLowerCase();
         assertTrue(response.contains("cabin"), "Did not see the name of the current room in response to look");
         assertTrue(response.contains("log cabin"), "Did not see a description of the room in response to look");
-        assertTrue(response.contains("magic potion"), "Did not see a description of artifacts in response to look");
-        assertTrue(response.contains("wooden trapdoor"), "Did not see description of furniture in response to look");
+        assertTrue(response.contains("magic potion"),
+                "Did not see a description of artifacts in response to look");
+        assertTrue(response.contains("wooden trapdoor"),
+                "Did not see description of furniture in response to look");
         assertTrue(response.contains("forest"), "Did not see available paths in response to look");
     }
 
@@ -77,11 +81,13 @@ class BasicCommandsTests {
 
         // 2. Assert Inventory: The artefact should appear in the player's inventory
         String invResponse = sendCommandToServer("simon: inv").toLowerCase();
-        assertTrue(invResponse.contains("potion"), "Did not see the potion in the inventory after an attempt was made to get it");
+        assertTrue(invResponse.contains("potion"),
+                "Did not see the potion in the inventory after an attempt was made to get it");
 
         // 3. Assert Location: The artefact should be removed from the room
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
-        assertFalse(lookResponse.contains("potion"), "Potion is still present in the room after an attempt was made to get it");
+        assertFalse(lookResponse.contains("potion"),
+                "Potion is still present in the room after an attempt was made to get it");
     }
 
     // Test that we can goto a different location (we won't get very far if we can't move around the game !)
@@ -89,7 +95,8 @@ class BasicCommandsTests {
     void testGoto() {
         sendCommandToServer("simon: goto forest");
         String response = sendCommandToServer("simon: look").toLowerCase();
-        assertTrue(response.contains("key"), "Failed attempt to use 'goto' command to move to the forest - there is no key in the current location");
+        assertTrue(response.contains("key"),
+                "Failed attempt to use 'goto' command to move to the forest - there is no key in the current location");
     }
 
     @Test
@@ -100,7 +107,8 @@ class BasicCommandsTests {
         // Assert: Make sure the key of forest can be seen and potion of cabin cannot be seen
         String response = sendCommandToServer("simon: look").toLowerCase();
         assertTrue(response.contains("key"), "After goto forest, player should see the key on the ground.");
-        assertFalse(response.contains("potion"), "After goto forest, potion of cabin should not be on the ground anymore");
+        assertFalse(response.contains("potion"),
+                "After goto forest, potion of cabin should not be on the ground anymore");
 
         // 2. Player returns to cabin from forest
         sendCommandToServer("simon: goto cabin");
@@ -118,7 +126,8 @@ class BasicCommandsTests {
 
         // 3. Assert: Check the player is still in the cabin and went nowhere
         String lookCabinResponse = sendCommandToServer("simon: look").toLowerCase();
-        assertTrue(lookCabinResponse.contains("trapdoor"), "player should still see the trapdoor as he/she did not go to other place.");
+        assertTrue(lookCabinResponse.contains("trapdoor"),
+                "The player should still see the trapdoor as he/she did not go to other place.");
     }
 
     @Test
@@ -134,7 +143,8 @@ class BasicCommandsTests {
 
         // 3. Assert: Look response should confirm player is still in cabin
         String lookResponse = sendCommandToServer("simon: look");
-        assertTrue(lookResponse.contains("Now you are in A log cabin in the woods."), "The player should still be in cabin as he/she cannot goto multiple places.");
+        assertTrue(lookResponse.contains("Now you are in A log cabin in the woods."),
+                "The player should still be in cabin as he/she cannot goto multiple places.");
     }
 
     // Test that composite commands (getting/dropping multiple items) are explicitly REJECTED
@@ -142,7 +152,8 @@ class BasicCommandsTests {
     void testGreedyGet() {
         // 1. Try to get the potion and the axe at the same time
         String getResponse = sendCommandToServer("simon: get the potion and axe please").toLowerCase();
-        assertTrue(getResponse.contains("error") || getResponse.contains("cannot"), "Game should reject composite get commands.");
+        assertTrue(getResponse.contains("error") || getResponse.contains("cannot"),
+                "Game should reject composite get commands.");
 
         // 2. Check the inventory: find nothing
         String invResponse = sendCommandToServer("simon: inv").toLowerCase();
@@ -163,7 +174,8 @@ class BasicCommandsTests {
 
         // 1. Greedy drop: try to drop axe and potion simultaneously
         String dropResponse = sendCommandToServer("simon: quickly drop the axe and potion now").toLowerCase();
-        assertTrue(dropResponse.contains("error") || dropResponse.contains("cannot"), "Game should reject composite drop commands.");
+        assertTrue(dropResponse.contains("error") || dropResponse.contains("cannot"),
+                "Game should reject composite drop commands.");
 
         // 2. Check the inventory: two artefacts must still be in the inv
         String invResponse = sendCommandToServer("simon: inv").toLowerCase();
@@ -186,7 +198,8 @@ class BasicCommandsTests {
         // 2. Try to drop a NON-EXISTENT artefact from the inv
         sendCommandToServer("simon: drop gold");
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
-        assertFalse(lookResponse.contains("gold"), "Dropping an item you do not have should not create it in the room.");
+        assertFalse(lookResponse.contains("gold"),
+                "Dropping an item you do not have should not create it in the room.");
     }
 
     @Test

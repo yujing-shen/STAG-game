@@ -34,11 +34,13 @@ class ExtendedFeaturesTests {
         // Even though Simon is in the cabin, the action requires the axe.
         // The axe is NOT in the room, and NOT in Simon's inventory.
         String simonResponse = sendCommandToServer("simon: chop tree with axe").toLowerCase();
-        assertTrue(simonResponse.contains("error") || simonResponse.contains("cannot do that"),"Multiplayer Error: Simon should not be able to use an item in Owen's inv.");
+        assertTrue(simonResponse.contains("error") || simonResponse.contains("cannot do that"),
+                "Multiplayer Error: Simon should not be able to use an item in Owen's inv.");
 
         // Assert that Simon cannot see the axe in the room because Owen has it
         String simonLookResponse = sendCommandToServer("simon: look").toLowerCase();
-        assertFalse(simonLookResponse.contains("axe"),"The axe is picked up by the other player and should be invisible.");
+        assertFalse(simonLookResponse.contains("axe"),
+                "The axe is picked up by the other player and should be invisible.");
     }
 
     @Test
@@ -54,9 +56,11 @@ class ExtendedFeaturesTests {
         String owenLookResponse = sendCommandToServer("owen: look").toLowerCase();
 
         // Assertion 1: Owen MUST see Simon
-        assertTrue(owenLookResponse.contains("simon"), "Multiplayer Error: Owen should be able to see Simon in the cabin.");
+        assertTrue(owenLookResponse.contains("simon"), "Multiplayer Error: " +
+                "Owen should be able to see Simon in the cabin.");
         // Assertion 2: Owen MUST NOT see himself
-        assertFalse(owenLookResponse.contains("owen"), "Multiplayer Error: Owen should not see his own name when looking around.");
+        assertFalse(owenLookResponse.contains("owen"), "Multiplayer Error: " +
+                "Owen should not see his own name when looking around.");
 
         // 3. Simon leaves the cabin and goes to the forest
         sendCommandToServer("simon: goto forest");
@@ -65,7 +69,8 @@ class ExtendedFeaturesTests {
         String owenLookAgainResponse = sendCommandToServer("owen: look").toLowerCase();
 
         // Assertion 3: Simon should be gone from Owen's sight
-        assertFalse(owenLookAgainResponse.contains("simon"), "Multiplayer Error: Owen should no longer see Simon because Simon went to the forest.");
+        assertFalse(owenLookAgainResponse.contains("simon"),
+                "Multiplayer Error: Owen should no longer see Simon because Simon went to the forest.");
 
         // 5. Simon looks around the forest
         String simonLookResponse = sendCommandToServer("simon: look").toLowerCase();
@@ -85,7 +90,8 @@ class ExtendedFeaturesTests {
 
         // Verify character entity parsing
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
-        assertTrue(lookResponse.contains("elf"), "Entity Parsing Error: The Character 'elf' should be parsed from the DOT file and visible in the cellar.");
+        assertTrue(lookResponse.contains("elf"),
+                "Entity Parsing Error: The Character 'elf' should be parsed from the DOT file and visible in the cellar.");
 
         // Perform combat action
         String fightResponse = sendCommandToServer("simon: fight elf").toLowerCase();
@@ -96,7 +102,8 @@ class ExtendedFeaturesTests {
         // Verify the Health system and 'consumed' logic
         String healthResponse = sendCommandToServer("simon: health").toLowerCase();
         // Assuming starting health is 3, one fight should drop it to 2
-        assertTrue(healthResponse.contains("2"), "Health System Error: Player health should decrease after a combat action that consumes 'health'.");
+        assertTrue(healthResponse.contains("2"),
+                "Health System Error: Player health should decrease after a combat action that consumes 'health'.");
     }
 
     @Test
@@ -122,7 +129,8 @@ class ExtendedFeaturesTests {
 
         // 4. Assert 2: Respawn at start location (cabin)
         String lookResponse = deathServer.handleCommand("simon: look").toLowerCase();
-        assertTrue(lookResponse.contains("cabin"), "Respawn Error: Player must be teleported back to the start location.");
+        assertTrue(lookResponse.contains("cabin"),
+                "Respawn Error: Player must be teleported back to the start location.");
 
         // 5. Assert 3: Inventory is emptied
         String invAfterDeath = deathServer.handleCommand("simon: inv").toLowerCase();
@@ -130,10 +138,12 @@ class ExtendedFeaturesTests {
 
         // 6. Assert 4: Health is fully restored to 3
         String healthResponse = deathServer.handleCommand("simon: health").toLowerCase();
-        assertTrue(healthResponse.contains("3"), "Health Error: Player health must be restored to maximum (3) after respawning.");
+        assertTrue(healthResponse.contains("3"),
+                "Health Error: Player health must be restored to maximum (3) after respawning.");
 
         // 7. Assert 5: The dropped item is now in the room where they died!
         // (Since they died in the cabin, the potion should be on the cabin floor)
-        assertTrue(lookResponse.contains("potion"), "Drop Error: The player's items must be dropped in the location where they died.");
+        assertTrue(lookResponse.contains("potion"),
+                "Drop Error: The player's items must be dropped in the location where they died.");
     }
 }

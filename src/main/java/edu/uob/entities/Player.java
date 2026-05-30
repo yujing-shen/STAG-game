@@ -9,6 +9,7 @@ public class Player extends GameEntity {
     private Location currentLocation;
     private int health;
     public static final int MAX_HEALTH = 3;
+
     public Player(String name, String description) {
         super(name, description);
         this.inventory = new HashMap<>();
@@ -20,12 +21,15 @@ public class Player extends GameEntity {
     public HashMap<String, Artefact> getInventory() {
         return inventory;
     }
+
     public Artefact getArtefact(String artefactName) {
         return inventory.get(artefactName);
     }
+
     public void addArtefact(Artefact artefact) {
         inventory.put(artefact.getName(), artefact);
     }
+
     public Artefact removeArtefact(String artefactName) {
         return inventory.remove(artefactName);
     }
@@ -34,13 +38,12 @@ public class Player extends GameEntity {
     public Location getCurrentLocation() {
         return currentLocation;
     }
+
     public void setCurrentLocation(Location currentLocation) {
         this.currentLocation = currentLocation;
     }
 
     // health
-
-
     public int getHealth() {
         return health;
     }

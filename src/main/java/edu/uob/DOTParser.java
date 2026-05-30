@@ -69,7 +69,8 @@ public class DOTParser {
 
             // automatically generate a 'storeroom' if it does not exist
             if (!gameMap.containsKey("storeroom")) {
-                Location storeroom = new Location("storeroom", "Storage for any entities not placed in the game");
+                Location storeroom = new Location("storeroom",
+                        "Storage for any entities not placed in the game");
                 gameMap.put("storeroom", storeroom);
                 allGameEntities.add("storeroom");
             }

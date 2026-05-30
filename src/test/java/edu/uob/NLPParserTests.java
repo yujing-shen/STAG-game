@@ -49,7 +49,8 @@ class NLPParserTests {
         sendCommandToServer("owen: cut       down the tree with the axe");
         String response2 = sendCommandToServer("owen: look");
         // Variable whitespace is allowed within trigger phrases that contain multiple words.
-        assertTrue(response2.contains("\nlog"), "Variable whitespace is still allowed within trigger phrases that contain multiple words.");
+        assertTrue(response2.contains("\nlog"),
+                "Variable whitespace is still allowed within trigger phrases that contain multiple words.");
     }
 
     @Test
@@ -62,7 +63,8 @@ class NLPParserTests {
         String response = sendCommandToServer("owen : please chop the tree using the axe").toLowerCase();
 
         // 3. Assert 1: The response MUST NOT contain an error message
-        assertFalse(response.contains("error") || response.contains("cannot"), "the action triggered successfully");
+        assertFalse(response.contains("error") || response.contains("cannot"),
+                "The action triggered successfully");
 
         // 4. Assert 2: Verify the game state to see if the tree was actually consumed and the log produced
         String lookResponse = sendCommandToServer("owen: look around the room").toLowerCase();
@@ -92,7 +94,8 @@ class NLPParserTests {
         // 3. Baseline Test: A valid multi-word trigger wrapped in decorative words.
         String successResponse = nlpTestServer.handleCommand("simon: please drink up the potion now").toLowerCase();
         assertTrue(successResponse.contains("successfully"),
-                "Baseline Error: A valid multi-word trigger should work even with leading/trailing decorative words.");
+                "Baseline Error: A valid multi-word trigger " +
+                        "should work even with leading/trailing decorative words.");
     }
 
     // Command can only involve one trigger
@@ -105,13 +108,15 @@ class NLPParserTests {
         assertFalse(invResponse.contains("axe"), "You cannot get the axe since you only can perform one action.");
 
         String lookResponse = sendCommandToServer("owen: look").toLowerCase();
-        assertTrue(lookResponse.contains("now you are in a log cabin in the woods."),"You cannot goto forest since you only can perform one action.");
+        assertTrue(lookResponse.contains("now you are in a log cabin in the woods."),
+                "You cannot goto forest since you only can perform one action.");
     }
 
     @Test
     void testMultipleCommands() {
         String response = sendCommandToServer("simon: get the axe and goto forest");
-        assertTrue(response.contains("Error: You can only perform one action at a time."), "Error: You can only perform one action at a time.");
+        assertTrue(response.contains("Error: You can only perform one action at a time."),
+                "Error: You can only perform one action at a time.");
         String invResponse = sendCommandToServer("simon: inv").toLowerCase();
         assertFalse(invResponse.contains("axe"), "The axe should not be in inventory");
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
@@ -123,7 +128,8 @@ class NLPParserTests {
         // 1. Test basic action with no subject
         sendCommandToServer("owen: goto ");
         String lookResponse1 = sendCommandToServer("owen: look").toLowerCase();
-        assertTrue(lookResponse1.contains("now you are in a log cabin in the woods."),"You cannot goto other places since the command does not have one subject");
+        assertTrue(lookResponse1.contains("now you are in a log cabin in the woods."),
+                "You cannot goto other places since the command does not have one subject");
 
         // 2. Set up
         sendCommandToServer("owen: goto forest");
@@ -133,11 +139,13 @@ class NLPParserTests {
 
         // 3. Test custom action with no subject
         String response3 = sendCommandToServer("owen: unlock the ");
-        assertTrue(response3.contains("error") || response3.contains("cannot"), "command cannot work with no subject");
+        assertTrue(response3.contains("error") || response3.contains("cannot"),
+                "command cannot work with no subject");
 
         // 4. Test custom action with full subjects (partial command is allowed)
         String response4 = sendCommandToServer("owen: unlock the trapdoor with key");
-        assertTrue(response4.contains("You unlock the door and see steps leading down into a cellar"), "command should work with one trigger and at least one subject.");
+        assertTrue(response4.contains("You unlock the door and see steps leading down into a cellar"),
+                "command should work with one trigger and at least one subject.");
 
         // 5. Test custom action with partial subject
         sendCommandToServer("owen: get the axe");
@@ -168,7 +176,8 @@ class NLPParserTests {
 
         // 4. Verify game state hasn't changed (the cellar path hasn't been produced)
         String lookResponse = sendCommandToServer("simon: look").toLowerCase();
-        assertFalse(lookResponse.contains("cellar"), "Game State Error: The trapdoor should not be unlocked due to the extraneous entity rule.");
+        assertFalse(lookResponse.contains("cellar"), "Game State Error: " +
+                "The trapdoor should not be unlocked due to the extraneous entity rule.");
     }
 
     @Test
