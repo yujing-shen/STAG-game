@@ -111,7 +111,7 @@ public final class GameServer {
     *       <ul>
     *         <li>Built-in commands: {@code inv}, {@code get}, {@code drop}, {@code goto},
     *             {@code look}, {@code health}</li>
- *         <li>Custom actions: {@link #handleCustomAction(Player, String)}</li>
+    *         <li>Custom actions: {@link #handleCustomAction(Player, String)}</li>
     *       </ul>
     *   </li>
     * </ol>
@@ -120,7 +120,6 @@ public final class GameServer {
     * @return A response string describing the result of the action, or an error message
     */
     public String handleCommand(String command) {
-        // TODO implement your server logic here
         try {
             // command cannot be null or empty
             if (command == null || command.isEmpty()) {
@@ -176,11 +175,15 @@ public final class GameServer {
         }
     }
 
+    
     /**
-     * Lists all artefacts currently in the possession of the player
+     * Handles the built-in {@code inv} / {@code inventory} command.
      *
-     * @param
-     * @return
+     * <p>Returns a formatted list of all artefacts currently held by the player.
+     * If the player's inventory is empty, returns a descriptive message instead.</p>
+     *
+     * @param player The current player whose inventory is being inspected
+     * @return A string listing the player's carried artefacts, or an empty-inventory message
      */
     private String handleInv(Player player) {
         HashMap<String, Artefact> inventory = player.getInventory();
