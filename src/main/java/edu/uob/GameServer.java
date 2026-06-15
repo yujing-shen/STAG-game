@@ -56,8 +56,21 @@ public final class GameServer {
     * Do not change the following method signature or we won't be able to mark your submission
     * Instantiates a new server instance, specifying a game with some configuration files
     *
-    * @param entitiesFile The game configuration file containing all game entities to use in your game
-    * @param actionsFile The game configuration file containing all game actions to use in your game
+    * <p>Initialisation process:</p>
+    * <ol>
+    *   <li>Parse the DOT entities file to build the game world map ({@code gameMap}),
+    *       identify the starting location, and collect all entity names into
+    *       {@code allGameEntities} for later NLP matching.</li>
+    *   <li>Parse the XML actions file to load all custom game actions
+    *       (triggers, subjects, consumed, produced, narration) into {@code gameActions}.</li>
+    * </ol>
+    * <p>After construction, the server is ready to accept player commands via
+    * {@link #handleCommand(String)}.</p>
+    *
+    * @param entitiesFile The game configuration file (.dot) containing all game entities
+    *                     (locations, artefacts, furniture, characters) and paths
+    * @param actionsFile  The game configuration file (.xml) containing all custom game actions
+    *                     (triggers, subjects, consumed, produced, narration)
     */
     public GameServer(File entitiesFile, File actionsFile) {
         // TODO implement your server logic here
