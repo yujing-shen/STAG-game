@@ -21,5 +21,10 @@
       <option name="name" value="maven-repository" />
       <option name="url" value="file:////Users/owen/Desktop/TB2/Java_project/cw-stag/libs" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven-repository" />
+      <option name="name" value="maven-repository" />
+      <option name="url" value="file:////Users/owen/Documents/bristol25_26/布里斯托大学/cs/TB2/Java_project/cw-stag/libs" />
+    </remote-repository>
   </component>
 </project>

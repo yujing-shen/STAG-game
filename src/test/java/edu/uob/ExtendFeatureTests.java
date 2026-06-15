@@ -146,4 +146,72 @@ class ExtendedFeaturesTests {
         assertTrue(lookResponse.contains("potion"),
                 "Drop Error: The player's items must be dropped in the location where they died.");
     }
+
+    @Test
+    void testProduceCharacterFromStoreroom() {
+        // [Bug Fix Validation] Characters produced by actions should appear in the current location.
+        // lumberjack starts in storeroom; blowing the horn should summon it to the player's location.
+
+        // 1. Player navigates to riverbank (where horn is)
+        sendCommandToServer("simon: goto forest");
+        sendCommandToServer("simon: goto riverbank");
+        sendCommandToServer("simon: get horn");
+
+        // 2. Player is now at riverbank with the horn - blow it
+        String blowResponse = sendCommandToServer("simon: blow horn").toLowerCase();
+        assertTrue(blowResponse.contains("lumberjack"),
+                "Action Error: blowing horn should return a narration mentioning lumberjack.");
+
+        // 3. lumberjack should now be visible at riverbank
+        String lookResponse = sendCommandToServer("simon: look").toLowerCase();
+        assertTrue(lookResponse.contains("lumberjack"),
+                "Produce Character Error: lumberjack should appear in riverbank after being summoned from storeroom.");
+    }
+
+    @Test
+    void testProduceCharacterSummonedToCurrentLocation() {
+        // [Bug Fix Validation] The lumberjack is summoned wherever the player currently is.
+        // Player blows horn while in the forest (after moving there with the horn).
+
+        // 1. Go to forest, then riverbank, pick up horn, come back to forest
+        sendCommandToServer("simon: goto forest");
+        sendCommandToServer("simon: goto riverbank");
+        sendCommandToServer("simon: get horn");
+        sendCommandToServer("simon: goto forest");
+
+        // 2. blow horn in forest
+        sendCommandToServer("simon: blow horn");
+
+        // 3. lumberjack should now appear in the forest (current location), not riverbank
+        String forestLook = sendCommandToServer("simon: look").toLowerCase();
+        assertTrue(forestLook.contains("lumberjack"),
+                "Produce Character Error: lumberjack should be summoned to the forest (player's current location).");
+    }
+
+    @Test
+    void testNoDuplicateEntityProduction() {
+        // [Bug Fix Validation] Once an entity is already in the game world,
+        // attempting to produce it again must be a no-op (no duplicates allowed).
+
+        // 1. Navigate to riverbank, get horn, blow it once -> lumberjack summoned
+        sendCommandToServer("simon: goto forest");
+        sendCommandToServer("simon: goto riverbank");
+        sendCommandToServer("simon: get horn");
+        sendCommandToServer("simon: blow horn");
+
+        // Verify lumberjack is now at riverbank
+        String firstLook = sendCommandToServer("simon: look").toLowerCase();
+        assertTrue(firstLook.contains("lumberjack"),
+                "Setup Error: lumberjack should be at riverbank after first blow.");
+
+        // 2. Move to forest and blow horn again (lumberjack already exists in world)
+        sendCommandToServer("simon: goto forest");
+        sendCommandToServer("simon: get horn"); // horn might have been dropped; try pick it up
+        sendCommandToServer("simon: blow horn"); // second blow - should NOT produce another lumberjack
+
+        // 3. lumberjack must NOT appear in forest (it's still in riverbank, no duplicate)
+        String forestLook = sendCommandToServer("simon: look").toLowerCase();
+        assertFalse(forestLook.contains("lumberjack"),
+                "Duplicate Entity Error: lumberjack already exists in world, must not be duplicated to forest.");
+    }
 }

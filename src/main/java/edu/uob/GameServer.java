@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 import static edu.uob.entities.Player.MAX_HEALTH;
 
@@ -479,16 +480,41 @@ public final class GameServer {
         Location storeroom = gameMap.get("storeroom");
 
         for (String entityName : action.getProduced()) {
+            // Duplicate defense: if entity already exists in any non-storeroom location, skip it
+            if (isEntityAlreadyInGame(entityName)) {
+                continue;
+            }
             if (storeroom.getAllArtefacts().containsKey(entityName)) {
                 currentLocation.addArtefact(storeroom.removeArtefact(entityName));
             } else if (storeroom.getAllFurniture().containsKey(entityName)) {
                 currentLocation.addFurniture(storeroom.removeFurniture(entityName));
+            } else if (storeroom.getAllCharacters().containsKey(entityName)) {
+                currentLocation.addCharacter(storeroom.removeCharacter(entityName));
             } else if (gameMap.containsKey(entityName)) {
                 currentLocation.addPath(gameMap.get(entityName));
             } else if (entityName.equals("health")) {
                 player.increaseHealth();
             }
         }
+    }
+
+    /**
+     * Checks if a named entity already exists in any non-storeroom location.
+     * Used to prevent duplicate entity creation.
+     */
+    private boolean isEntityAlreadyInGame(String entityName) {
+        for (Map.Entry<String, Location> entry : gameMap.entrySet()) {
+            if (entry.getKey().equals("storeroom")) continue;
+            Location loc = entry.getValue();
+            if (loc.getAllArtefacts().containsKey(entityName)) return true;
+            if (loc.getAllFurniture().containsKey(entityName)) return true;
+            if (loc.getAllCharacters().containsKey(entityName)) return true;
+        }
+        // Also check all players' inventories
+        for (Player p : players.values()) {
+            if (p.getInventory().containsKey(entityName)) return true;
+        }
+        return false;
     }
 
     /**
