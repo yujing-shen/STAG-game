@@ -49,7 +49,7 @@ The project is fortified by an extensive JUnit test suite divided into **4 dedic
 
 ### Prerequisites
 
-* Java 17 or higer
+* Java 17 or higher
 * Maven
 
 ### Running the Server
@@ -69,3 +69,28 @@ mvnw exec:java@client -Dexec.args="[YourPlayerName]"
 ```
 
 *(Replace `[YourPlayerName]`) with any valid name containing letters, spaces, hyphens, or apostrophes)*.
+
+## Bug Fixes & Self-Corrections
+
+This section documents bugs identified during testing and subsequently resolved, demonstrating an iterative, test-driven development approach.
+
+### Fix 1: `Character` Entities Not Produced by Custom Actions
+
+**Problem:** The `processProducedEntities()` method in `GameServer` only handled `Artefact` and `Furniture` types when moving entities out of the storeroom. `Character` entities (e.g., `lumberjack`) were silently ignored, so actions like `blow horn` appeared to succeed (returning the correct narration) but the character never appeared in the game world.
+
+**Root Cause:** A missing `else if` branch for `storeroom.getAllCharacters()` in the produced-entity processing loop.
+
+**Fix:** Added the missing `Character` branch so characters are correctly moved from the storeroom to the player's current location upon production.
+
+### Fix 2: Duplicate Entity Production Not Prevented
+
+**Problem:** Once an entity had been produced into the game world, it was possible to trigger the same action again and attempt to produce it a second time — violating the game rule that each entity must exist in exactly one place at a time.
+
+**Root Cause:** No guard condition existed before the produce logic to check whether the target entity was already present somewhere in the game world (any non-storeroom location or a player's inventory).
+
+**Fix:** Introduced a helper method `isEntityAlreadyInGame()` that scans all active locations and player inventories. The produce step is skipped if the entity is found, ensuring no duplicates can ever be created.
+
+**Tests Added:** Three new test cases in `ExtendedFeaturesTests` were written to cover and validate both fixes:
+- `testProduceCharacterFromStoreroom` — verifies a character is correctly summoned.
+- `testProduceCharacterSummonedToCurrentLocation` — verifies the character appears at the player's location.
+- `testNoDuplicateEntityProduction` — verifies a second produce attempt is a no-op.
