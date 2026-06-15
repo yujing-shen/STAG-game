@@ -97,7 +97,27 @@ public final class GameServer {
     * Do not change the following method signature or we won't be able to mark your submission
     * This method handles all incoming game commands and carries out the corresponding actions.</p>
     *
-    * @param command The incoming command to be processed
+    * <p>Command processing pipeline:</p>
+    * <ol>
+    *   <li><b>Validation</b> &mdash; reject null/empty commands and malformed format
+    *       (must follow {@code "name:action"}).</li>
+    *   <li><b>Sanitisation</b> &mdash; extract and trim the player name, clean the action
+    *       string via {@link CommandParser#cleanCommand(String)} (lowercase, collapse whitespace).</li>
+    *   <li><b>Multi-command guard</b> &mdash; reject composite commands that trigger more than
+    *       one logical action via {@link #hasMultipleCommands(String)}.</li>
+    *   <li><b>Player resolution</b> &mdash; look up an existing player or create a new one
+    *       placed at the starting location (multiplayer support).</li>
+    *   <li><b>Dispatch</b> &mdash; route the cleaned action to the appropriate handler:
+    *       <ul>
+    *         <li>Built-in commands: {@code inv}, {@code get}, {@code drop}, {@code goto},
+    *             {@code look}, {@code health}</li>
+ *         <li>Custom actions: {@link #handleCustomAction(Player, String)}</li>
+    *       </ul>
+    *   </li>
+    * </ol>
+    *
+    * @param command The incoming command string in the format {@code "playerName:action"}
+    * @return A response string describing the result of the action, or an error message
     */
     public String handleCommand(String command) {
         // TODO implement your server logic here
