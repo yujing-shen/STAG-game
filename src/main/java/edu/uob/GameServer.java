@@ -284,11 +284,22 @@ public final class GameServer {
     }
 
     /**
-     * Describes the current location,
-     * including all entities in that location and paths to other locations
+     * Handles the built-in {@code look} command.
      *
-     * @param
-     * @return
+     * <p>Generates a comprehensive description of the player's current location,
+     * assembling the following sections in order:</p>
+     * <ol>
+     *   <li>Location description</li>
+     *   <li>Artefacts present in the location</li>
+     *   <li>Furniture present in the location</li>
+     *   <li>Characters present in the location</li>
+     *   <li>Paths accessible from the location</li>
+     *   <li>Other players in the same location (multiplayer visibility)</li>
+     * </ol>
+     * <p>Empty sections are omitted from the output.</p>
+     *
+     * @param currentPlayer The player executing the look command
+     * @return A formatted string describing everything visible in the current location
      */
     private String handleLook(Player currentPlayer) {
         // get the current room where current player is in
