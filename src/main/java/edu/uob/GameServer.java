@@ -94,7 +94,6 @@ public final class GameServer {
     }
 
     /**
-    * Do not change the following method signature or we won't be able to mark your submission
     * This method handles all incoming game commands and carries out the corresponding actions.</p>
     *
     * <p>Command processing pipeline:</p>
@@ -225,8 +224,16 @@ public final class GameServer {
     }
 
     /**
-     * Moves the player to a new location
-     * (only if there is a valid path to that location)
+     * Updates the player's current location by navigating through an available path.
+     * <p>
+     *     This method validates the command structure to ensure exactly one destination
+     *     location is specified, verifies topological connectivity from the current room,
+     *     and updates the player's spatial state upon success.
+     * </p>
+     *
+     * @param player        The active {@link Player} instance executing the navigation.
+     * @param actionCommand The sanitized natural language command string from the client.
+     * @return              A status narration  string representing the outcome or specific error context.
      */
     private String handleGoto(Player player, String actionCommand) {
         // 1. get the currentRoom the player is in
