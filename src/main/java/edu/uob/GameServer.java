@@ -371,27 +371,39 @@ public final class GameServer {
     }
 
     /**
-     * Main engine for handling all custom XML actions.
-     * Enforces "Extraneous Entities", "Partial Commands", and "Ambiguous Commands" rules.
+     * Processes complex natural language commands against all defined custom XML game actions.
+     * <p>
+     * This core engine method acts as strict filtering pipeline. It evaluates the command
+     * against all loaded game actions by enforcing the following NLP business rules:
+     * <ul>
+     *     <li><b>Partial Commands:</b> At least one valid subject must be explicitly mentioned.</li>
+     *     <li><b>Extraneous Entities:</b> The action is bypassed if the command entities unrelated to it.</li>
+     *     <li><b>Ambiguity Resolution:</b> If multiple actions are fully performable, execution is aborted.</li>
+     *     <li><b>State Mutation:</b> Upon finding a unique valid action, it triggers physical effects and evaluates player health.</li>
+     * </ul>
+     * </p>
      *
-     * @param currentPlayer The current player executing the command
-     * @param actionCommand The cleaned command string entered by the player
-     * @return A String describing the result of the action
+     * @param currentPlayer The active {@link Player} initiating the custom action.
+     * @param actionCommand The sanitized natural language command string.
+     * @return The action narration, a death sequence message, or an appropriate error context.
      */
     private String handleCustomAction(Player currentPlayer, String actionCommand) {
-        // 1. scan for all game entities mentioned in the command
+        // Phase 1: Entity Extraction
+        // Extract all recognized game entities from the raw command for subsequent validation
         ArrayList<String> mentionedEntities = commandParser.getMentionedEntities(actionCommand, allGameEntities);
 
         // prepare for ambiguous commands defense: create a list for valid candidate ations
-         ArrayList<GameAction> validActions = new ArrayList<>();
+        ArrayList<GameAction> validActions = new ArrayList<>();
 
+        // Phase 2: Action Candidate Filtering
         for (GameAction gameAction : gameActions) {
-            // 2. trigger word check: does the command contain a valid trigger for this action?
+            //  Check if the command contains the correct trigger verb and at least one core subject
             if (commandParser.isActionTriggered(gameAction, actionCommand)) {
-                // 3. partial command rule: at least 1 subject must be explicitly mentioned
+
+                // Phase 3: Extraneous Entity Defense (Strict Validation)
+                // Reject the action if the user mentions items not involved in this specific action's lifecycle
                 if (commandParser.countMentionedSubjects(gameAction, actionCommand) >= 1) {
 
-                    // 4. extraneous entities defense line
                     boolean hasExtraneous = false;
                     for (String entityName : mentionedEntities) {
                         // if the mentioned entity is neither a subject, nor consumed, nor produced by this action...
@@ -399,17 +411,17 @@ public final class GameServer {
                             !gameAction.getConsumed().contains(entityName) &&
                             !gameAction.getProduced().contains(entityName)) {
                             hasExtraneous = true;
-                            break;
+                            break; // Extraneous entity found, abort checking this action
                         }
                     }
 
-                    // if the command contains extraneous entities for this specific action
-                    // skip this action and proceed to check the next one.
+                    // Bypass this action if it violates the extraneous entities rule
                     if (hasExtraneous) {
                         continue;
                     }
 
-                    // 5. physical verification : are the required subjects actually in the room or inventory?
+                    // Phase 4: Physical State Verification
+                    // Confirm the player possesses the required subjects (either in inventory or current room)
                     if (verifySubjects(currentPlayer, gameAction)) {
                         validActions.add(gameAction);
                     }
@@ -417,17 +429,18 @@ public final class GameServer {
             }
         }
 
-        // 6. final verdict: handle "ambiguous commands"
+        // Phase 5: Ambiguity Resolution & Execution
         if (validActions.isEmpty()) {
             return "You cannot do that here, or you do not have the required items.";
         }
         else if (validActions.size() > 1) {
-            // ambiguity caught1 multiple actions are fully valid and performable
-            // (e.h, "open door" or "open car" with a shared key
+            // Defense against ambiguous overlapping triggers (e.g., "open" with shared subjects)
             return "Error: Ambiguous command. There is more than one valid action possible.";
         } else {
+            // Exactly one valid action identified: Execute state mutations and evaluate health
             GameAction finalGameAction = validActions.get(0);
             boolean isDead = executeEffects(currentPlayer, finalGameAction);
+
             if (!isDead) {
                 return finalGameAction.getNarration();
             } else {
